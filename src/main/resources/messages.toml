@@ -1,0 +1,29 @@
+# BSP-Velocity Additions: every line a player can see.
+# MiniMessage format (https://docs.advntr.dev/minimessage/format.html), for example "<yellow>text" or "<gray>[<green>+<gray>]".
+# Placeholders: <player> the player's name, <server> the server joined or left from.
+
+[joinLeave]
+join = "<yellow><player> joined the game"
+leave = "<yellow><player> left the game"
+
+[tabList]
+# <online> players on the network, <ping> the viewer's own ping in ms, <newline> for a second line.
+header = "Build | Secure | Protect<newline><gray>minecraft.buildsecureprotect.com"
+footer = "<gray><online> online · ping <white><ping> ms"
+# Each name. <prefix> is the LuckPerms prefix (empty without LuckPerms-Velocity), <staff> the mark below for staff.
+entry = "<prefix><staff><player>"
+staffMark = ""
+
+[players]
+# <online> the count, <names> the names (each rendered with tabList.entry), <servers> how many servers have players.
+list = "<yellow>Online (<online>):</yellow> <names>"
+none = "<gray>Nobody is online."
+staffHeader = "<yellow>Online (<online>)</yellow> <gray>on <servers> server(s)"
+staffServer = "<gray><server> (<count>):</gray> <names>"
+separator = "<white>, "
+
+[chat]
+# A chat line from another server. <line> is the line as the backend showed it, <player> and <text> its parts,
+# <server> the server it came from. Everyone sees "relay"; players with players.serversPermission see "relayStaff".
+relay = "<line>"
+relayStaff = "<gray>[<server>]</gray> <line>"

@@ -1,0 +1,69 @@
+plugins {
+    id 'java'
+    id 'com.gradleup.shadow' version '8.3.5'
+}
+
+group = 'com.mrgregles'
+version = project.plugin_version
+description = 'BSP-Velocity Additions: last server, shared chat, network tab list and join/leave messages for the Build Secure Protect proxy.'
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'papermc'
+        url = 'https://repo.papermc.io/repository/maven-public/'
+    }
+}
+
+dependencies {
+    compileOnly "com.velocitypowered:velocity-api:${velocity_api_version}"
+    annotationProcessor "com.velocitypowered:velocity-api:${velocity_api_version}"
+    // Optional at run time: prefixes for the tab list and /players when LuckPerms-Velocity is installed (D4).
+    compileOnly "net.luckperms:api:${luckperms_api_version}"
+
+    testImplementation "com.velocitypowered:velocity-api:${velocity_api_version}"
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.mockito:mockito-core:5.11.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+    }
+}
+
+// BuildConstants.java is generated from src/main/templates so the @Plugin version follows gradle.properties.
+def templateSource = file('src/main/templates')
+def templateDest = layout.buildDirectory.dir('generated/sources/templates')
+def generateTemplates = tasks.register('generateTemplates', Copy) { task ->
+    def props = ['version': project.version.toString()]
+    task.inputs.properties props
+    task.from templateSource
+    task.into templateDest
+    task.expand props
+}
+sourceSets.main.java.srcDir(generateTemplates.map { it.outputs })
+
+// Only the shaded jar is produced; it is the one that goes into the proxy's plugins/ folder.
+tasks.named('jar') {
+    enabled = false
+}
+shadowJar {
+    archiveClassifier = ''
+}
+tasks.named('build') {
+    dependsOn tasks.named('shadowJar')
+}

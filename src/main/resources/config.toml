@@ -1,0 +1,45 @@
+# BSP-Velocity Additions configuration.
+# Lines starting with # are comments. Server names must match the [servers] table in velocity.toml.
+
+[lastServer]
+# Send players back to the server they were on when they left the network.
+enabled = true
+# Servers that are never remembered. A player who left from one of these starts at spawn next time.
+ignoredServers = []
+# Where a player goes when their last server is offline or unknown.
+# Empty means the first reachable server of the "try" list in velocity.toml.
+fallbackServer = ""
+# How often, in seconds, every server is pinged to learn whether it is reachable.
+pingSeconds = 10
+# Import VelocityRememberServer's plugins/velocityrememberserver/locations.yml once, when this plugin's own store is empty.
+importVelocityRememberServer = true
+
+[joinLeave]
+# Announce to the whole network when a player really joins or leaves it.
+# Switching servers never prints anything: a move line would let players track each other (owner decision D15).
+enabled = true
+# Players with this permission join, move and leave without a line. Empty disables the check.
+silentPermission = "bspva.joinleave.silent"
+
+[tabList]
+# Show everyone on the network in everyone's tab list. Nothing shows which server a player is on.
+enabled = true
+# How often, in seconds, the footer and the names are refreshed.
+refreshSeconds = 3
+# Players with this permission get the staff mark from messages.toml in front of their name. Empty disables it.
+staffPermission = "bspva.tab.staff"
+
+[players]
+# The /players command (alias /online): names only for everyone.
+enabled = true
+# Players with this permission see the list grouped by server, with counts.
+serversPermission = "bspva.players.servers"
+
+[chat]
+# Shared chat: forward each public chat line BSP-Core sends on bsp_core:proxy to players on the other servers.
+# Needs proxy.relayChat = true in BSP-Core's server config on every backend.
+enabled = true
+# Show the line as the backend formatted it (keeps colours and prefixes). Off: a plain "<Name> text".
+useBackendFormatting = true
+# Also print relayed lines to the proxy console.
+logToConsole = true

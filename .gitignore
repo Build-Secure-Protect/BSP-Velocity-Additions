@@ -1,0 +1,26 @@
+# Claude's working files never go to GitHub (owner's rule; the pre-commit hook refuses them too)
+CLAUDE.md
+.claude/
+
+# build output
+build/
+.gradle/
+run/
+libs/
+server/
+logs/
+out/
+
+# IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+bin/
+
+# OS
+.DS_Store

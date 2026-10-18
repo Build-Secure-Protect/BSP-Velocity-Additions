@@ -1,0 +1,118 @@
+<title>Cross-Server Chat Lines</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: brief, three chat-box cards (stacked on a phone), each with its messages.toml lines. Dark only: a game HUD. */
+:root {
+  --bg: #0b0e13; --panel: #10151c; --inset: #0c0e12; --line: #2a2f3a;
+  --text: #e6eaf2; --muted: #9aa3b5; --hint: #6f7788;
+  --teal: #19d3b0; --violet: #b58cff; --gold: #ffd23a; --bad: #ff6b5c;
+  --mc-yellow: #ffff55; --mc-gray: #aaaaaa; --mc-white: #ffffff; --mc-aqua: #55ffff; --mc-gold: #ffaa00; --mc-dgray: #555555;
+  --mc: 'VT323', 'Courier New', monospace; --ui: 'IBM Plex Sans', system-ui, sans-serif;
+  color-scheme: dark;
+}
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--ui); font-size: 15px; line-height: 1.5;
+  padding-block: 28px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+main { max-width: 1180px; margin: 0 auto; display: grid; gap: 22px; }
+h1 { font-family: var(--mc); font-weight: 400; font-size: 34px; letter-spacing: .5px; margin: 0; color: var(--teal); text-wrap: balance; }
+h1 small { color: var(--muted); font-size: 22px; margin-left: 10px; }
+p { margin: 0; max-width: 72ch; color: var(--muted); }
+.warn { border-left: 3px solid var(--gold); padding: 8px 12px; background: rgba(255,210,58,.08); color: var(--text); max-width: 80ch; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
+.card { background: var(--panel); border: 1px solid var(--teal); border-radius: 4px; padding: 14px 14px 16px; display: grid; gap: 12px; min-width: 0; align-content: start; }
+.card header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.card h2 { font-family: var(--mc); font-weight: 400; font-size: 26px; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+.tag { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border: 1px solid; border-radius: 3px; white-space: nowrap; }
+.tag.a { color: var(--gold); border-color: var(--gold); background: rgba(255,210,58,.12); }
+.tag.b { color: var(--teal); border-color: var(--teal); background: rgba(25,211,176,.12); }
+.tag.c { color: var(--bad); border-color: var(--bad); background: rgba(255,107,92,.12); }
+.chat { background: var(--inset); border: 1px solid var(--line); padding: 10px 8px 8px; display: grid; gap: 2px; font-family: var(--mc); font-size: 24px; line-height: 1.05; overflow-x: auto; }
+.chat .cap { font: 12px/1.4 var(--ui); color: var(--hint); padding: 4px 0 2px; letter-spacing: .04em; text-transform: uppercase; }
+.chat .l { background: rgba(0,0,0,.5); padding: 2px 6px; white-space: nowrap; color: var(--mc-white); text-shadow: 2px 2px 0 #3f3f3f; }
+.chat .l .g { color: var(--mc-gray); text-shadow: 2px 2px 0 #2a2a2a; }
+.chat .l .dg { color: var(--mc-dgray); text-shadow: 2px 2px 0 #151515; }
+.chat .l .aq { color: var(--mc-aqua); text-shadow: 2px 2px 0 #153f3f; }
+.chat .l .gold { color: var(--mc-gold); text-shadow: 2px 2px 0 #3f2a00; }
+.chat .l .y { color: var(--mc-yellow); text-shadow: 2px 2px 0 #3f3f15; }
+.note { font-size: 13px; color: var(--hint); }
+.note b { color: var(--muted); font-weight: 600; }
+pre { margin: 0; background: var(--inset); border: 1px solid var(--line); padding: 10px 12px; font: 12.5px/1.5 'SFMono-Regular', Menlo, Consolas, monospace; color: var(--text); overflow-x: auto; }
+pre .k { color: var(--teal); } pre .s { color: var(--gold); } pre .c { color: var(--hint); }
+ul { margin: 0; padding-left: 18px; color: var(--muted); }
+li { margin: 2px 0; }
+.foot { display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 14px; }
+code { font-size: .92em; }
+</style>
+
+<main>
+  <div>
+    <h1>Cross-server chat lines <small>BSP-Velocity Additions, feature 2</small></h1>
+    <p>How a chat line from another server looks when it arrives. BSP-Core sends the proxy the line exactly as that server showed it (prefixes, team tags, colours included), and the proxy forwards it to everyone elsewhere. The only open question is the tag in front. Each card shows the same moment: Alex on BSP-Spawn, Steve speaking from BSP-Wild, and what a staff member with <code>bspva.players.servers</code> sees.</p>
+  </div>
+  <div class="warn">Decision D6 (taken as a default on the first day) put <code>[BSP-Wild]</code> in front of every relayed line. Decisions D15 and D16, taken later, hide servers from players so nobody can track anyone. A server tag on chat would undo that: every message would say where its speaker is. Options A and B keep D15; C is D6 as written. <b>Decided 2026-10-18: option A</b> (D18).</div>
+
+  <section class="cards">
+    <article class="card">
+      <header><h2>A · One chat</h2><span class="tag a">chosen · default</span></header>
+      <div class="chat">
+        <div class="cap">Alex, on BSP-Spawn</div>
+        <div class="l">&lt;Alex&gt; anyone selling plasma?</div>
+        <div class="l">&lt;Steve&gt; <span class="gold">[Warden]</span> yes, 40 each</div>
+        <div class="l">&lt;Nadia&gt; same here</div>
+        <div class="cap">staff, on BSP-SafeRoom</div>
+        <div class="l"><span class="g">[BSP-Spawn]</span> &lt;Alex&gt; anyone selling plasma?</div>
+        <div class="l"><span class="g">[BSP-Wild]</span> &lt;Steve&gt; <span class="gold">[Warden]</span> yes, 40 each</div>
+      </div>
+      <p class="note"><b>Remote lines look exactly like local ones.</b> The network reads as one server; nothing tells a player where anyone is. Staff still see the tag, as with <code>/players</code>.</p>
+<pre><span class="k">[chat]</span>
+<span class="k">relay</span>      = <span class="s">"&lt;line&gt;"</span>
+<span class="k">relayStaff</span> = <span class="s">"&lt;gray&gt;[&lt;server&gt;]&lt;/gray&gt; &lt;line&gt;"</span></pre>
+    </article>
+
+    <article class="card">
+      <header><h2>B · Elsewhere</h2><span class="tag b">marker</span></header>
+      <div class="chat">
+        <div class="cap">Alex, on BSP-Spawn</div>
+        <div class="l">&lt;Alex&gt; anyone selling plasma?</div>
+        <div class="l"><span class="dg">◆</span> &lt;Steve&gt; <span class="gold">[Warden]</span> yes, 40 each</div>
+        <div class="l"><span class="dg">◆</span> &lt;Nadia&gt; same here</div>
+        <div class="cap">staff, on BSP-SafeRoom</div>
+        <div class="l"><span class="g">[BSP-Spawn]</span> &lt;Alex&gt; anyone selling plasma?</div>
+        <div class="l"><span class="g">[BSP-Wild]</span> &lt;Steve&gt; <span class="gold">[Warden]</span> yes, 40 each</div>
+      </div>
+      <p class="note"><b>A quiet mark says "not on your server".</b> You know Steve is somewhere else, not where. Useful when someone says "come here"; it does give away that they are not nearby.</p>
+<pre><span class="k">[chat]</span>
+<span class="k">relay</span>      = <span class="s">"&lt;dark_gray&gt;◆&lt;/dark_gray&gt; &lt;line&gt;"</span>
+<span class="k">relayStaff</span> = <span class="s">"&lt;gray&gt;[&lt;server&gt;]&lt;/gray&gt; &lt;line&gt;"</span></pre>
+    </article>
+
+    <article class="card">
+      <header><h2>C · Server tag</h2><span class="tag c">D6 as written</span></header>
+      <div class="chat">
+        <div class="cap">Alex, on BSP-Spawn</div>
+        <div class="l">&lt;Alex&gt; anyone selling plasma?</div>
+        <div class="l"><span class="g">[BSP-Wild]</span> &lt;Steve&gt; <span class="gold">[Warden]</span> yes, 40 each</div>
+        <div class="l"><span class="g">[BSP-SafeRoom]</span> &lt;Nadia&gt; same here</div>
+        <div class="cap">staff, on BSP-SafeRoom</div>
+        <div class="l"><span class="g">[BSP-Spawn]</span> &lt;Alex&gt; anyone selling plasma?</div>
+        <div class="l"><span class="g">[BSP-Wild]</span> &lt;Steve&gt; <span class="gold">[Warden]</span> yes, 40 each</div>
+      </div>
+      <p class="note"><b>Everyone sees where every line came from.</b> The clearest, and the one that lets players track each other by reading chat, which D15 ruled out for join and leave lines.</p>
+<pre><span class="k">[chat]</span>
+<span class="k">relay</span>      = <span class="s">"&lt;gray&gt;[&lt;server&gt;]&lt;/gray&gt; &lt;line&gt;"</span>
+<span class="k">relayStaff</span> = <span class="s">"&lt;gray&gt;[&lt;server&gt;]&lt;/gray&gt; &lt;line&gt;"</span></pre>
+    </article>
+  </section>
+
+  <section class="foot">
+    <p><b style="color:var(--text)">Same in every option.</b></p>
+    <ul>
+      <li>The line itself is the backend's own: the same prefixes, team tags and colours the speaker's server showed. With <code>chat.useBackendFormatting = false</code> it becomes a plain <code>&lt;Name&gt; text</code>.</li>
+      <li>Players on the speaker's own server see nothing extra; they already saw the line. Players not yet on a backend see nothing.</li>
+      <li>Team chat, chat blocked by Region Guard and commands never cross: BSP-Core never sends them (its request VA-C2).</li>
+      <li>Only bytes from a backend count. A client sending on the channel is dropped.</li>
+      <li>Every relayed line also goes to the proxy console with its server, so the whole network's chat is in one log.</li>
+      <li>Needs <code>proxy.relayChat = true</code> in BSP-Core's server config on every backend.</li>
+    </ul>
+  </section>
+</main>

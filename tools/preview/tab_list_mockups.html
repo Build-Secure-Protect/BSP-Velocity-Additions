@@ -1,0 +1,186 @@
+<title>Network Tab List</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: brief, then three cards, each a tab overlay as the client draws it plus the /players lines and the messages.toml for it. Dark only: a game HUD. */
+:root {
+  --bg: #0b0e13; --panel: #10151c; --inset: #0c0e12; --line: #2a2f3a;
+  --text: #e6eaf2; --muted: #9aa3b5; --hint: #6f7788;
+  --teal: #19d3b0; --violet: #b58cff; --gold: #ffd23a; --bad: #ff6b5c;
+  --mc-yellow: #ffff55; --mc-green: #55ff55; --mc-red: #ff5555; --mc-gray: #aaaaaa; --mc-white: #ffffff; --mc-aqua: #55ffff; --mc-gold: #ffaa00; --mc-lpurple: #ff55ff; --mc-dgray: #555555;
+  --mc: 'VT323', 'Courier New', monospace; --ui: 'IBM Plex Sans', system-ui, sans-serif;
+  color-scheme: dark;
+}
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--ui); font-size: 15px; line-height: 1.5;
+  padding-block: 28px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+main { max-width: 1240px; margin: 0 auto; display: grid; gap: 22px; }
+h1 { font-family: var(--mc); font-weight: 400; font-size: 34px; letter-spacing: .5px; margin: 0; color: var(--teal); text-wrap: balance; }
+h1 small { color: var(--muted); font-size: 22px; margin-left: 10px; }
+p { margin: 0; max-width: 72ch; color: var(--muted); }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px; }
+.card { background: var(--panel); border: 1px solid var(--teal); border-radius: 4px; padding: 14px 14px 16px; display: grid; gap: 12px; min-width: 0; align-content: start; }
+.card header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.card h2 { font-family: var(--mc); font-weight: 400; font-size: 26px; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+.tag { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border: 1px solid; border-radius: 3px; white-space: nowrap; }
+.tag.a { color: var(--gold); border-color: var(--gold); background: rgba(255,210,58,.12); }
+.tag.b { color: var(--teal); border-color: var(--teal); background: rgba(25,211,176,.12); }
+.tag.c { color: var(--violet); border-color: var(--violet); background: rgba(181,140,255,.12); }
+/* the tab overlay: sky-ish ground, then the half-black box the client draws */
+.world { background: linear-gradient(#5d8fd6, #7fb0e8 55%, #6b8f5a 56%, #4f7140); padding: 14px 10px 18px; border: 1px solid var(--line); display: grid; justify-items: center; overflow-x: auto; }
+.tab { background: rgba(0,0,0,.5); padding: 6px 8px 8px; font-family: var(--mc); font-size: 22px; line-height: 1; display: grid; gap: 6px; justify-items: center; min-width: 300px; }
+.hdr, .ftr { text-align: center; color: var(--mc-white); text-shadow: 2px 2px 0 #3f3f3f; white-space: nowrap; }
+.hdr .g, .ftr .g { color: var(--mc-gray); text-shadow: 2px 2px 0 #2a2a2a; }
+.hdr .t, .ftr .t { color: var(--mc-aqua); text-shadow: 2px 2px 0 #153f3f; }
+.hdr .gold, .ftr .gold { color: var(--mc-gold); text-shadow: 2px 2px 0 #3f2a00; }
+.rows { display: grid; grid-template-columns: repeat(2, minmax(150px, 1fr)); gap: 1px 2px; }
+.row { display: grid; grid-template-columns: 16px 1fr 20px; align-items: center; gap: 6px; background: rgba(255,255,255,.12); padding: 1px 4px 1px 3px; color: var(--mc-white); text-shadow: 2px 2px 0 #3f3f3f; white-space: nowrap; }
+.row i { width: 16px; height: 16px; display: block; image-rendering: pixelated; background: linear-gradient(135deg, #c8946a 0 50%, #6b4a2b 50%); }
+.row i.b { background: linear-gradient(135deg, #e8c39e 0 50%, #3b2b1b 50%); }
+.row i.c { background: linear-gradient(135deg, #a3b1c6 0 50%, #2b3b55 50%); }
+.row .ping { height: 12px; display: flex; align-items: flex-end; gap: 1px; justify-self: end; }
+.row .ping b { width: 3px; background: var(--mc-green); display: block; }
+.row .ping b:nth-child(1){height:4px}.row .ping b:nth-child(2){height:6px}.row .ping b:nth-child(3){height:8px}.row .ping b:nth-child(4){height:10px}.row .ping b:nth-child(5){height:12px}
+.row .ping.mid b:nth-child(n+4){background:#3a3a3a} .row .ping.low b:nth-child(n+3){background:#3a3a3a}
+.row .p { color: var(--mc-gray); text-shadow: 2px 2px 0 #2a2a2a; }
+.row .own { color: var(--mc-gold); text-shadow: 2px 2px 0 #3f2a00; }
+.row .mod { color: var(--mc-aqua); text-shadow: 2px 2px 0 #153f3f; }
+.row .war { color: var(--mc-lpurple); text-shadow: 2px 2px 0 #3f153f; }
+.row .star { color: var(--mc-gold); text-shadow: 2px 2px 0 #3f2a00; }
+.chat { background: var(--inset); border: 1px solid var(--line); padding: 8px; display: grid; gap: 2px; font-family: var(--mc); font-size: 22px; line-height: 1.05; overflow-x: auto; }
+.chat .l { background: rgba(0,0,0,.5); padding: 2px 6px; white-space: nowrap; color: var(--mc-white); text-shadow: 2px 2px 0 #3f3f3f; }
+.chat .l .g { color: var(--mc-gray); text-shadow: 2px 2px 0 #2a2a2a; }
+.chat .l .t { color: var(--mc-aqua); text-shadow: 2px 2px 0 #153f3f; }
+.chat .l .y { color: var(--mc-yellow); text-shadow: 2px 2px 0 #3f3f15; }
+.chat .l .gold { color: var(--mc-gold); text-shadow: 2px 2px 0 #3f2a00; }
+.chat .cap { font: 12px/1.4 var(--ui); color: var(--hint); padding: 2px 0 0; letter-spacing: .04em; text-transform: uppercase; }
+.note { font-size: 13px; color: var(--hint); }
+.note b { color: var(--muted); font-weight: 600; }
+pre { margin: 0; background: var(--inset); border: 1px solid var(--line); padding: 10px 12px; font: 12.5px/1.5 'SFMono-Regular', Menlo, Consolas, monospace; color: var(--text); overflow-x: auto; }
+pre .k { color: var(--teal); } pre .s { color: var(--gold); } pre .c { color: var(--hint); }
+ul { margin: 0; padding-left: 18px; color: var(--muted); }
+li { margin: 2px 0; }
+.foot { display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 14px; }
+code { font-size: .92em; }
+</style>
+
+<main>
+  <div>
+    <h1>Network tab list and /players <small>BSP-Velocity Additions, feature 3</small></h1>
+    <p>Three looks for the tab list once it shows everyone on the network. None shows which server a player is on (decision D16). The client draws the heads, the ping bars and the columns; the plugin controls the header, the footer, the order and each name. Each card also shows what <code>/players</code> prints for a normal player and for staff. <b style="color:var(--gold)">Decided 2026-10-18: option B</b> (D17); the lines below each card are now the bundled defaults for B.</p>
+  </div>
+
+  <section class="cards">
+    <article class="card">
+      <header><h2>A · Plain</h2><span class="tag a">not chosen</span></header>
+      <div class="world"><div class="tab">
+        <div class="hdr">Build | Secure | Protect</div>
+        <div class="rows">
+          <div class="row"><i></i><span>Alex</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="c"></i><span>Nadia</span><span class="ping mid"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="b"></i><span>Bram</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i></i><span>Oren</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="c"></i><span>Dani</span><span class="ping low"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="b"></i><span>Priya</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i></i><span>Ewa</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i></i><span>Steve</span><span class="ping mid"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="b"></i><span>Jonah</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="c"></i><span>Tomas</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="c"></i><span>Mrgregles</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i></i><span>Yara</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+        </div>
+        <div class="ftr"><span class="g">12 players online</span></div>
+      </div></div>
+      <p class="note"><b>Looks like one big vanilla server.</b> Names only, alphabetical, no ranks. The least that does the job; nothing to maintain when ranks change.</p>
+      <div class="chat">
+        <div class="cap">/players, everyone</div>
+        <div class="l"><span class="y">Online (12):</span> Alex, Bram, Dani, Ewa, Jonah, Mrgregles, Nadia, Oren, Priya, Steve, Tomas, Yara</div>
+        <div class="cap">/players, staff with bspva.players.servers</div>
+        <div class="l"><span class="y">Online (12)</span> <span class="g">on 3 servers</span></div>
+        <div class="l"><span class="g">BSP-Spawn (4):</span> Alex, Dani, Oren, Yara</div>
+        <div class="l"><span class="g">BSP-Wild (7):</span> Bram, Ewa, Jonah, Mrgregles, Nadia, Priya, Steve</div>
+        <div class="l"><span class="g">BSP-SafeRoom (1):</span> Tomas</div>
+      </div>
+<pre><span class="k">[tabList]</span>
+<span class="k">header</span> = <span class="s">"Build | Secure | Protect"</span>
+<span class="k">footer</span> = <span class="s">"&lt;gray&gt;&lt;online&gt; players online"</span>
+<span class="k">entry</span>  = <span class="s">"&lt;player&gt;"</span></pre>
+    </article>
+
+    <article class="card">
+      <header><h2>B · Ranked</h2><span class="tag b">chosen · default</span></header>
+      <div class="world"><div class="tab">
+        <div class="hdr">Build | Secure | Protect<br><span class="g">minecraft.buildsecureprotect.com</span></div>
+        <div class="rows">
+          <div class="row"><i></i><span>Alex</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="c"></i><span><span class="war">[Warden]</span> Nadia</span><span class="ping mid"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="b"></i><span>Bram</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i></i><span>Oren</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="c"></i><span><span class="mod">[Mod]</span> Dani</span><span class="ping low"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="b"></i><span>Priya</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i></i><span>Ewa</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i></i><span><span class="war">[Warden]</span> Steve</span><span class="ping mid"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="b"></i><span>Jonah</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="c"></i><span>Tomas</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="c"></i><span><span class="own">[Owner]</span> Mrgregles</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i></i><span>Yara</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+        </div>
+        <div class="ftr"><span class="g">12 online</span> <span class="g">·</span> <span class="g">ping</span> 43 ms</div>
+      </div></div>
+      <p class="note"><b>Each name carries its LuckPerms prefix</b> (RankUp titles and staff ranks), still alphabetical. Needs LuckPerms-Velocity on the proxy (D4); without it the list falls back to A. Sorting by rank is possible later, but needs scoreboard team packets that can collide with backend teams, so it is not in this option.</p>
+      <div class="chat">
+        <div class="cap">/players, everyone</div>
+        <div class="l"><span class="y">Online (12):</span> Alex, Bram, <span class="mod">[Mod]</span> Dani, Ewa, Jonah, <span class="gold">[Owner]</span> Mrgregles, <span class="war">[Warden]</span> Nadia, ...</div>
+        <div class="cap">/players, staff</div>
+        <div class="l"><span class="g">BSP-Wild (7):</span> Bram, Ewa, Jonah, <span class="gold">[Owner]</span> Mrgregles, <span class="war">[Warden]</span> Nadia, ...</div>
+      </div>
+<pre><span class="k">[tabList]</span>
+<span class="k">header</span> = <span class="s">"Build | Secure | Protect&lt;newline&gt;&lt;gray&gt;minecraft.buildsecureprotect.com"</span>
+<span class="k">footer</span> = <span class="s">"&lt;gray&gt;&lt;online&gt; online · ping &lt;white&gt;&lt;ping&gt; ms"</span>
+<span class="k">entry</span>  = <span class="s">"&lt;prefix&gt;&lt;player&gt;"</span>   <span class="c"># &lt;prefix&gt; is empty without LuckPerms</span></pre>
+    </article>
+
+    <article class="card">
+      <header><h2>C · Holo</h2><span class="tag c">house colours</span></header>
+      <div class="world"><div class="tab">
+        <div class="hdr"><span class="t">BUILD</span> <span class="g">·</span> <span class="t">SECURE</span> <span class="g">·</span> <span class="t">PROTECT</span></div>
+        <div class="rows">
+          <div class="row"><i></i><span>Alex</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="c"></i><span>Nadia</span><span class="ping mid"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="b"></i><span>Bram</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i></i><span>Oren</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="c"></i><span><span class="star">✦</span> Dani</span><span class="ping low"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="b"></i><span>Priya</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i></i><span>Ewa</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i></i><span>Steve</span><span class="ping mid"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="b"></i><span>Jonah</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="c"></i><span>Tomas</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i class="c"></i><span><span class="star">✦</span> Mrgregles</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+          <div class="row"><i></i><span>Yara</span><span class="ping"><b></b><b></b><b></b><b></b><b></b></span></div>
+        </div>
+        <div class="ftr"><span class="t">12</span> <span class="g">online across the network</span></div>
+      </div></div>
+      <p class="note"><b>The pack's own colours, no ranks.</b> Teal header, a gold ✦ on staff (a permission, no LuckPerms needed), everyone else plain. Calm, and it says "network" without saying where anyone is.</p>
+      <div class="chat">
+        <div class="cap">/players, everyone</div>
+        <div class="l"><span class="t">12 online:</span> Alex, Bram, <span class="gold">✦</span> Dani, Ewa, Jonah, <span class="gold">✦</span> Mrgregles, Nadia, Oren, Priya, Steve, Tomas, Yara</div>
+        <div class="cap">/players, staff</div>
+        <div class="l"><span class="t">BSP-Wild</span> <span class="g">(7):</span> Bram, Ewa, Jonah, <span class="gold">✦</span> Mrgregles, Nadia, Priya, Steve</div>
+      </div>
+<pre><span class="k">[tabList]</span>
+<span class="k">header</span> = <span class="s">"&lt;aqua&gt;BUILD &lt;gray&gt;· &lt;aqua&gt;SECURE &lt;gray&gt;· &lt;aqua&gt;PROTECT"</span>
+<span class="k">footer</span> = <span class="s">"&lt;aqua&gt;&lt;online&gt; &lt;gray&gt;online across the network"</span>
+<span class="k">entry</span>  = <span class="s">"&lt;staff&gt;&lt;player&gt;"</span>   <span class="c"># &lt;staff&gt; is "&lt;gold&gt;✦ " for bspva.tab.staff, else empty</span></pre>
+    </article>
+  </section>
+
+  <section class="foot">
+    <p><b style="color:var(--text)">Same in every option.</b></p>
+    <ul>
+      <li>Everyone on the network appears in everyone's tab list, with their real skin and ping. Nothing shows the server (D16). The client keeps its vanilla alphabetical order and column layout.</li>
+      <li>Header, footer and the entry format are MiniMessage lines in <code>messages.toml</code>; placeholders <code>&lt;player&gt;</code>, <code>&lt;online&gt;</code>, <code>&lt;ping&gt;</code>, <code>&lt;prefix&gt;</code>, <code>&lt;staff&gt;</code>. The footer refreshes every few seconds.</li>
+      <li><code>/players</code> (alias <code>/online</code>) is open to everyone and lists names only. With <code>bspva.players.servers</code> it is grouped by server with counts. Velocity's own <code>/glist</code> is untouched.</li>
+      <li>Velocitab comes out of <code>plugins/</code> when this ships (D3); two plugins writing the same tab list would fight.</li>
+      <li>Players with <code>bspva.joinleave.silent</code> still appear in the tab list; hiding staff from it is a separate decision if ever wanted.</li>
+    </ul>
+  </section>
+</main>

@@ -1,0 +1,109 @@
+<title>Network Join and Leave Lines</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: a short brief, then three chat-box cards side by side (stacked on a phone), each with its messages.toml lines. Dark only: this is a game HUD. */
+:root {
+  --bg: #0b0e13; --panel: #10151c; --inset: #0c0e12; --line: #2a2f3a;
+  --text: #e6eaf2; --muted: #9aa3b5; --hint: #6f7788;
+  --teal: #19d3b0; --violet: #b58cff; --gold: #ffd23a; --bad: #ff6b5c;
+  --mc-yellow: #ffff55; --mc-green: #55ff55; --mc-red: #ff5555; --mc-gray: #aaaaaa; --mc-white: #ffffff; --mc-aqua: #55ffff;
+  --mc: 'VT323', 'Courier New', monospace; --ui: 'IBM Plex Sans', system-ui, sans-serif;
+  color-scheme: dark;
+}
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--ui); font-size: 15px; line-height: 1.5;
+  padding-block: 28px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+main { max-width: 1180px; margin: 0 auto; display: grid; gap: 22px; }
+h1 { font-family: var(--mc); font-weight: 400; font-size: 34px; letter-spacing: .5px; margin: 0; color: var(--teal); text-wrap: balance; }
+h1 small { color: var(--muted); font-size: 22px; margin-left: 10px; }
+p { margin: 0; max-width: 70ch; color: var(--muted); }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
+.card { background: var(--panel); border: 1px solid var(--teal); border-radius: 4px; padding: 14px 14px 16px; display: grid; gap: 12px; min-width: 0; }
+.card header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.card h2 { font-family: var(--mc); font-weight: 400; font-size: 26px; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+.tag { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border: 1px solid; border-radius: 3px; white-space: nowrap; }
+.tag.a { color: var(--gold); border-color: var(--gold); background: rgba(255,210,58,.12); }
+.tag.b { color: var(--teal); border-color: var(--teal); background: rgba(25,211,176,.12); }
+.tag.c { color: var(--violet); border-color: var(--violet); background: rgba(181,140,255,.12); }
+.chat { background: var(--inset); border: 1px solid var(--line); padding: 10px 8px 8px; display: grid; gap: 2px; font-family: var(--mc); font-size: 24px; line-height: 1.05; overflow-x: auto; }
+.chat .l { background: rgba(0,0,0,.5); padding: 2px 6px; white-space: nowrap; color: var(--mc-white); text-shadow: 2px 2px 0 #3f3f3f; }
+.chat .l.y { color: var(--mc-yellow); text-shadow: 2px 2px 0 #3f3f15; }
+.chat .l .g { color: var(--mc-gray); text-shadow: 2px 2px 0 #2a2a2a; }
+.chat .l .gr { color: var(--mc-green); text-shadow: 2px 2px 0 #153f15; }
+.chat .l .rd { color: var(--mc-red); text-shadow: 2px 2px 0 #3f1515; }
+.chat .l .aq { color: var(--mc-aqua); text-shadow: 2px 2px 0 #153f3f; }
+.chat .l .w { color: var(--mc-white); text-shadow: 2px 2px 0 #3f3f3f; }
+.chat .l.off { opacity: .55; }
+.note { font-size: 13px; color: var(--hint); }
+.note b { color: var(--muted); font-weight: 600; }
+pre { margin: 0; background: var(--inset); border: 1px solid var(--line); padding: 10px 12px; font: 13px/1.5 'SFMono-Regular', Menlo, Consolas, monospace; color: var(--text); overflow-x: auto; }
+pre .k { color: var(--teal); } pre .s { color: var(--gold); } pre .c { color: var(--hint); }
+ul { margin: 0; padding-left: 18px; color: var(--muted); }
+li { margin: 2px 0; }
+.foot { display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 14px; }
+</style>
+
+<main>
+  <div>
+    <h1>Network join and leave lines <small>BSP-Velocity Additions, feature 4</small></h1>
+    <p>Three ways the proxy can announce a player who really joins or leaves the network. Every option is a MiniMessage line in <code>messages.toml</code>, so the wording and colours stay editable afterwards. <b style="color:var(--gold)">Decided 2026-10-18: option A.</b> The faded third line (a "moved to another server" message) was dropped altogether: a move line would let players track each other across servers (decision D15).</p>
+  </div>
+
+  <section class="cards">
+    <article class="card">
+      <header><h2>A · Vanilla</h2><span class="tag a">default</span></header>
+      <div class="chat">
+        <div class="l"><span class="w">&lt;Alex&gt;</span> anyone at spawn?</div>
+        <div class="l y">Steve joined the game</div>
+        <div class="l"><span class="w">&lt;Steve&gt;</span> back, got kicked by the storm</div>
+        <div class="l y">Mrgregles left the game</div>
+        <div class="l off"><span class="g">Steve moved to BSP-Wild</span></div>
+      </div>
+      <p class="note"><b>Looks exactly like single-server Minecraft.</b> Players see no change, only fewer lines, because switching servers no longer prints anything. Nothing says which server anyone is on.</p>
+<pre><span class="k">join</span>  = <span class="s">"&lt;yellow&gt;&lt;player&gt; joined the game"</span>
+<span class="k">leave</span> = <span class="s">"&lt;yellow&gt;&lt;player&gt; left the game"</span>
+<span class="k">moved</span> = <span class="s">"&lt;gray&gt;&lt;player&gt; moved to &lt;to&gt;"</span>   <span class="c"># shown only with announceMoves = true</span></pre>
+    </article>
+
+    <article class="card">
+      <header><h2>B · Signs</h2><span class="tag b">compact</span></header>
+      <div class="chat">
+        <div class="l"><span class="w">&lt;Alex&gt;</span> anyone at spawn?</div>
+        <div class="l"><span class="g">[</span><span class="gr">+</span><span class="g">]</span> Steve</div>
+        <div class="l"><span class="w">&lt;Steve&gt;</span> back, got kicked by the storm</div>
+        <div class="l"><span class="g">[</span><span class="rd">-</span><span class="g">]</span> Mrgregles</div>
+        <div class="l off"><span class="g">[</span><span class="aq">&gt;</span><span class="g">]</span> <span class="g">Steve</span> <span class="g">→ BSP-Wild</span></div>
+      </div>
+      <p class="note"><b>Short and scannable.</b> The colour of the sign carries the meaning, so a busy chat stays readable. The network style many large servers use; no server names.</p>
+<pre><span class="k">join</span>  = <span class="s">"&lt;gray&gt;[&lt;green&gt;+&lt;gray&gt;] &lt;white&gt;&lt;player&gt;"</span>
+<span class="k">leave</span> = <span class="s">"&lt;gray&gt;[&lt;red&gt;-&lt;gray&gt;] &lt;white&gt;&lt;player&gt;"</span>
+<span class="k">moved</span> = <span class="s">"&lt;gray&gt;[&lt;aqua&gt;&gt;&lt;gray&gt;] &lt;player&gt; → &lt;to&gt;"</span></pre>
+    </article>
+
+    <article class="card">
+      <header><h2>C · Where</h2><span class="tag c">informative</span></header>
+      <div class="chat">
+        <div class="l"><span class="w">&lt;Alex&gt;</span> anyone at spawn?</div>
+        <div class="l y">Steve joined the game <span class="g">on BSP-Wild</span></div>
+        <div class="l"><span class="w">&lt;Steve&gt;</span> back, got kicked by the storm</div>
+        <div class="l y">Mrgregles left the game <span class="g">from BSP-Spawn</span></div>
+        <div class="l off"><span class="g">Steve went to BSP-Wild</span></div>
+      </div>
+      <p class="note"><b>Vanilla wording plus the server.</b> Friends can tell where to find someone without a command. The grey tail keeps the line calm; it is the first thing to cut if the names get long.</p>
+<pre><span class="k">join</span>  = <span class="s">"&lt;yellow&gt;&lt;player&gt; joined the game &lt;gray&gt;on &lt;server&gt;"</span>
+<span class="k">leave</span> = <span class="s">"&lt;yellow&gt;&lt;player&gt; left the game &lt;gray&gt;from &lt;server&gt;"</span>
+<span class="k">moved</span> = <span class="s">"&lt;gray&gt;&lt;player&gt; went to &lt;to&gt;"</span></pre>
+    </article>
+  </section>
+
+  <section class="foot">
+    <p><b style="color:var(--text)">Same in every option.</b></p>
+    <ul>
+      <li>A join line is sent once, when the player has landed on their first backend. A leave line is sent once, when they disconnect from the proxy. Switching servers with BSP-Teleport never prints anything (D15).</li>
+      <li>Everyone on the network sees the line, the joining player included, as in vanilla.</li>
+      <li>Players with the permission <code>bspva.joinleave.silent</code> (staff who slip in quietly) produce no lines.</li>
+      <li>Placeholders: <code>&lt;player&gt;</code>, <code>&lt;server&gt;</code> (the server joined or left from).</li>
+      <li>Until BSP-Teleport builds request VA-T1, each backend still prints its own vanilla "joined the game" and "left the game" on every switch, so during testing both kinds of line appear.</li>
+    </ul>
+  </section>
+</main>
