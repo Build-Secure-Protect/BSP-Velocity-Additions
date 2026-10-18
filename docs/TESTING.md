@@ -81,7 +81,7 @@ Untested on the proxy:
 
 Built and unit-tested (63 tests in all): the decoder for BSP-Core's `bsp_core:proxy` payload (version 1, kind `chat`), the relay that forwards each line to players on every other server, the staff variant with the server tag, console logging, and the guards (bytes from a client are dropped, unknown versions and kinds ignored, other channels untouched, a `storage.serverId` that differs from the Velocity name is warned about once). Loaded headless on the local proxy; no backend sent a line there, so the whole flow is still to be seen in game.
 
-Needs BSP-Core's jar with VA-C2 (`bsp-core-1.2.0.jar` built 2026-10-18, unreleased) on every backend with `proxy.relayChat = true` in `serverconfig/bsp_core-server.toml`. BSP-Core's own checklist is "Proxy chat relay, VA-C2" in its `docs/TESTING.md`.
+Needs BSP-Core 1.3.0 (commit `6d65907`, the first with VA-C2) on every backend with `proxy.relayChat = true` in `serverconfig/bsp_core-server.toml`. BSP-Core's own checklist is "Proxy chat relay, VA-C2" in its `docs/TESTING.md`.
 
 The owner picked option A from `tools/preview/chat_relay_mockups.html`: no tag for players, `[Server]` for staff with `bspva.players.servers`.
 
