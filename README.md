@@ -7,7 +7,7 @@ Features, in order of work:
 1. **Last server** (built, see below): a player who leaves the network comes back to the server they were on. If that server is offline they go to spawn instead of being refused.
 2. **Shared chat** across every server behind the proxy (built, proxy side): needs BSP-Core 1.3.0 with `proxy.relayChat = true` on every backend. Team chat and blocked chat never cross, because the backend decides what was public.
 3. **Network-wide player list and tab list** (built): everyone in everyone's tab list with their LuckPerms prefix, a two-line header, a footer with the count and your ping; `/players` for a list. No server is shown to normal players. Replaces Velocitab.
-4. **Join and leave messages for the whole network** (built): shown once when a player really joins or leaves, never when BSP-Teleport moves them between servers. Each backend's own vanilla lines are switched off with `suppressJoinLeaveMessages = true` in BSP-Teleport's server config, on every backend at once.
+4. **Join and leave messages for the whole network** (built): shown once when a player really joins or leaves, never when BSP-Teleport moves them between servers. Each backend's own vanilla lines are switched off with `suppressJoinLeaveMessages = true` in BSP-Teleport 0.2.0's server config, on every backend at once.
 
 Companion to the BSP Forge mods on the backends: BSP-Core, BSP-Region Guard, BSP-Teleport, BSP-RankUp and BSP-InventorySync. Anything this plugin needs from them is optional on their side, so a server without a proxy loses nothing.
 

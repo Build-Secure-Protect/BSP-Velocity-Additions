@@ -50,7 +50,7 @@ Untested on the proxy:
 
 - [ ] Start the proxy with the jar; the log shows `Join and leave lines: on, silent permission bspva.joinleave.silent` and `plugins/bsp_velocity_additions/messages.toml` exists.
 - [ ] Join with one player while another is online on a different server: both see one yellow `<name> joined the game` line, once, and the proxy console logs it too.
-- [ ] Before this: set `suppressJoinLeaveMessages = true` under `[network]` in `bsp_teleport-server.toml` on **every** backend (BSP-Teleport's VA-T1, its 2026-10-18 build; `/bsptp reload` re-reads it). A backend without it still prints its own lines on every switch.
+- [ ] Before this: set `suppressJoinLeaveMessages = true` under `[network]` in `bsp_teleport-server.toml` on **every** backend (BSP-Teleport 0.2.0, the first with VA-T1; `/bsptp reload` re-reads it). A backend without it still prints its own lines on every switch.
 - [ ] Switch servers with BSP-Teleport (or `/server`): nobody sees a line from the proxy, and neither backend prints its own "left the game" or "joined the game".
 - [ ] Disconnect: everyone sees one `<name> left the game` line.
 - [ ] Connect and get refused before reaching any backend (for example every backend down): no join and no leave line.
