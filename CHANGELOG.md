@@ -4,6 +4,9 @@ All notable changes to BSP-Velocity Additions. The format follows [Keep a Change
 
 ## [Unreleased]
 
+### Changed
+- README: backends may be standard Forge 1.20.1 or Mohist; the plugin needs no change for either (the network moves to Forge on 2026-10-21).
+
 ### Fixed
 - Backends with a large mod list were reported as "not answering" (bug B1): Velocity cannot decode a modded server's status reply, so the status ping failed although the server was up. Reachability now comes from a plain TCP connection check, and a server with any player connected always counts as reachable. The failure reason is logged once per outage.
 - Only one jar is built; the unshaded `-slim` jar is gone.

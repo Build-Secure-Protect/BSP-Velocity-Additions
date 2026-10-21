@@ -96,3 +96,15 @@ Untested on the proxy:
 - [ ] Set `relayChat = false` on one backend and restart it: its lines no longer cross, lines from the other still arrive.
 - [ ] A backend whose `storage.serverId` differs from its Velocity name: one warning in the proxy log, lines still cross with the Velocity name as the tag.
 - [ ] Set `chat.useBackendFormatting = false`, restart the proxy: relayed lines become plain `<Name> text`.
+
+## 2026-10-21: backends moved from Mohist to standard Forge (task T14)
+
+No code changed. Before the move, on every backend: keep `proxy-compatible-forge` and its `config/proxy-compatible-forge.toml` (forwarding mode MODERN, the proxy's secret), swap LuckPerms-Bukkit for LuckPerms-Forge on the same database, keep BSP-Core 1.3.0 with `relayChat = true` and BSP-Teleport 0.2.0 with `suppressJoinLeaveMessages = true`.
+
+Untested on the proxy:
+
+- [ ] Start the proxy with the Forge backends up: within ten seconds every backend shows `Server <name> is reachable`.
+- [ ] A player joins: they arrive and see one `<name> joined the game` line, and the backend prints no join line of its own.
+- [ ] Rejoin: switch servers, disconnect, reconnect; you arrive on the second server (the last-server steps above).
+- [ ] Chat: a line from one backend appears once on another (the shared-chat steps above).
+- [ ] With LuckPerms-Forge on the shared database: a rank prefix still shows in the tab list and `/players`.

@@ -14,6 +14,7 @@ Companion to the BSP Forge mods on the backends: BSP-Core, BSP-Region Guard, BSP
 ## Requirements
 
 - Velocity 3.4.0 or newer, Java 17 or newer.
+- Backends: Forge 1.20.1 (Mohist works too) with Proxy Compatible Forge doing modern forwarding. The plugin never runs on a backend.
 - Backend server names in `velocity.toml` must match Region Guard's `storage.serverId` and BSP-Teleport's `network.serverName`.
 
 ## Install
