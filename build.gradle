@@ -20,6 +20,14 @@ dependencies {
     annotationProcessor "com.velocitypowered:velocity-api:${velocity_api_version}"
     // Optional at run time: prefixes for the tab list and /players when LuckPerms-Velocity is installed (D4).
     compileOnly "net.luckperms:api:${luckperms_api_version}"
+    // The BSP Discord bot (VA-D1, D20). Shaded with its libraries relocated (see shadowJar). Velocity already
+    // provides SLF4J, so JDA logs into the proxy's console. Voice is never used, so opus and Tink (JDA's voice
+    // encryption, which also pulls in protobuf and a second Gson) are left out.
+    implementation("net.dv8tion:JDA:${jda_version}") {
+        exclude group: 'org.slf4j'
+        exclude module: 'opus-java'
+        exclude group: 'com.google.crypto.tink'
+    }
 
     testImplementation "com.velocitypowered:velocity-api:${velocity_api_version}"
     testImplementation platform('org.junit:junit-bom:5.10.2')
@@ -63,6 +71,21 @@ tasks.named('jar') {
 }
 shadowJar {
     archiveClassifier = ''
+    // D20: JDA's own libraries move under our package, so they can never clash with the copies Velocity or
+    // another plugin ships. JDA itself keeps its package (no other plugin on the proxy carries it).
+    def shaded = 'com.mrgregles.bsp_velocity_additions.shaded'
+    relocate 'okhttp3', "${shaded}.okhttp3"
+    relocate 'okio', "${shaded}.okio"
+    relocate 'kotlin', "${shaded}.kotlin"
+    relocate 'com.neovisionaries', "${shaded}.neovisionaries"
+    relocate 'com.fasterxml.jackson', "${shaded}.jackson"
+    relocate 'gnu.trove', "${shaded}.trove"
+    relocate 'org.apache.commons.collections4', "${shaded}.collections4"
+    relocate 'org.jetbrains.annotations', "${shaded}.jetbrains.annotations"
+    relocate 'org.intellij.lang.annotations', "${shaded}.intellij.annotations"
+    exclude 'META-INF/versions/*/module-info.class'
+    exclude 'module-info.class'
+    mergeServiceFiles()
 }
 tasks.named('build') {
     dependsOn tasks.named('shadowJar')

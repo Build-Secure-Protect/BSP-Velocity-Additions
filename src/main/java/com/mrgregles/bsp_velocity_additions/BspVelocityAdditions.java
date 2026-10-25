@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.mrgregles.bsp_velocity_additions.config.Messages;
 import com.mrgregles.bsp_velocity_additions.config.PluginConfig;
 import com.mrgregles.bsp_velocity_additions.chat.ChatRelayFeature;
+import com.mrgregles.bsp_velocity_additions.discord.DiscordFeature;
 import com.mrgregles.bsp_velocity_additions.joinleave.JoinLeaveFeature;
 import com.mrgregles.bsp_velocity_additions.players.PlayersCommand;
 import com.mrgregles.bsp_velocity_additions.tablist.LuckPermsPrefixes;
@@ -39,7 +40,7 @@ import java.util.Optional;
         id = BspVelocityAdditions.ID,
         name = "BSP-Velocity Additions",
         version = BuildConstants.VERSION,
-        description = "Last server, shared chat, network tab list and join/leave messages for the BSP proxy.",
+        description = "Last server, shared chat, network tab list, join/leave messages and the Discord bot for the BSP proxy.",
         url = "https://github.com/Build-Secure-Protect",
         authors = {"Mrgregles"},
         dependencies = {@Dependency(id = "luckperms", optional = true)}
@@ -55,6 +56,7 @@ public final class BspVelocityAdditions {
     private PluginConfig config = PluginConfig.defaults();
     private Messages messages = Messages.defaults();
     private LastServerStore lastServers;
+    private DiscordFeature discord;
 
     @Inject
     public BspVelocityAdditions(ProxyServer proxy, Logger logger, @DataDirectory Path dataDirectory) {
@@ -107,6 +109,7 @@ public final class BspVelocityAdditions {
                         ? config.players().serversPermission() : "the console only");
             }
         }
+        discord = DiscordFeature.start(config.discord(), messages, dataDirectory, System::getenv, logger).orElse(null);
     }
 
     private void startLastServer(PluginConfig.LastServer settings) {
@@ -136,6 +139,9 @@ public final class BspVelocityAdditions {
     public void onProxyShutdown(ProxyShutdownEvent event) {
         if (lastServers != null) {
             lastServers.flush();
+        }
+        if (discord != null) {
+            discord.stop();
         }
         logger.info("BSP-Velocity Additions stopped");
     }

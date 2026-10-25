@@ -73,4 +73,58 @@ class PluginConfigTest {
 
         assertEquals(PluginConfig.defaults(), PluginConfig.load(dir, mock(Logger.class)));
     }
+
+    @Test
+    void theDiscordBotIsOffByDefaultAndReadsItsSection(@TempDir Path dir) throws Exception {
+        assertEquals(PluginConfig.Discord.DEFAULTS, PluginConfig.load(dir.resolve("fresh"), mock(Logger.class)).discord());
+        assertFalse(PluginConfig.Discord.DEFAULTS.enabled());
+
+        Files.writeString(dir.resolve(PluginConfig.FILE_NAME), """
+                [discord]
+                enabled = true
+                guildId = "1100000000000000001"
+                alertChannelId = 1100000000000000002
+                redisHost = "192.168.1.25"
+                redisPort = 6380
+                redisUser = "herald"
+                redisChannel = ""
+                wrongCodesPerTenMinutes = -3
+                """);
+        PluginConfig.Discord d = PluginConfig.load(dir, mock(Logger.class)).discord();
+
+        assertTrue(d.enabled());
+        assertEquals(1100000000000000001L, d.guildId());
+        assertEquals(1100000000000000002L, d.alertChannelId());
+        assertTrue(d.hasAlertChannel());
+        assertEquals("192.168.1.25", d.redisHost());
+        assertEquals(6380, d.redisPort());
+        assertEquals("herald", d.redisUser());
+        assertEquals("bsp_core:discord", d.redisChannel(), "an empty channel falls back to BSP-Core's default");
+        assertEquals(0, d.wrongCodesPerTenMinutes());
+    }
+
+    @Test
+    void aDiscordIdThatIsNotANumberCountsAsUnset(@TempDir Path dir) throws Exception {
+        Files.writeString(dir.resolve(PluginConfig.FILE_NAME), """
+                [discord]
+                guildId = "my server"
+                alertChannelId = ""
+                """);
+        PluginConfig.Discord d = PluginConfig.load(dir, mock(Logger.class)).discord();
+
+        assertEquals(0L, d.guildId());
+        assertFalse(d.hasAlertChannel());
+    }
+
+    @Test
+    void theTemplateHasNoTokenOrPasswordSetting() throws Exception {
+        String template = new String(PluginConfig.class.getResourceAsStream("/config.toml").readAllBytes());
+        String discord = template.substring(template.indexOf("[discord]"));
+        for (String line : discord.split("\n")) {
+            if (!line.startsWith("#") && line.contains("=")) {
+                String key = line.substring(0, line.indexOf('=')).trim().toLowerCase();
+                assertFalse(key.contains("token") || key.contains("password"), line);
+            }
+        }
+    }
 }

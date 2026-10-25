@@ -16,7 +16,8 @@ import java.util.stream.Collectors;
  * The plugin's settings, read from {@code config.toml} in the data folder. A missing file is created from the
  * bundled template, so the comments in the file are the documentation. Missing keys take their defaults.
  */
-public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList tabList, Players players, Chat chat) {
+public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList tabList, Players players, Chat chat,
+                           Discord discord) {
 
     public static final String FILE_NAME = "config.toml";
 
@@ -74,8 +75,24 @@ public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList t
         public static final Chat DEFAULTS = new Chat(true, true, true);
     }
 
+    /**
+     * Settings for the BSP Discord bot (BSP-Core request VA-D1, decisions D20 to D23). The bot's token and the Redis
+     * password are deliberately not settings: they come only from the environment variables {@code BSP_DISCORD_TOKEN}
+     * and {@code BSP_REDIS_PASSWORD}, so they are never in a file. Discord ids are 0 when unset.
+     */
+    public record Discord(boolean enabled, long guildId, long alertChannelId, String redisHost, int redisPort,
+                          String redisUser, String redisChannel, int wrongCodesPerTenMinutes) {
+
+        public static final Discord DEFAULTS = new Discord(false, 0L, 0L, "127.0.0.1", 6379, "", "bsp_core:discord", 5);
+
+        public boolean hasAlertChannel() {
+            return alertChannelId != 0L;
+        }
+    }
+
     public static PluginConfig defaults() {
-        return new PluginConfig(LastServer.DEFAULTS, JoinLeave.DEFAULTS, TabList.DEFAULTS, Players.DEFAULTS, Chat.DEFAULTS);
+        return new PluginConfig(LastServer.DEFAULTS, JoinLeave.DEFAULTS, TabList.DEFAULTS, Players.DEFAULTS, Chat.DEFAULTS,
+                Discord.DEFAULTS);
     }
 
     /** Creates the file from the template when it is missing, then reads it. A broken file falls back to the defaults. */
@@ -101,7 +118,40 @@ public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList t
 
     static PluginConfig parse(Toml toml) {
         return new PluginConfig(parseLastServer(toml.getTable("lastServer")), parseJoinLeave(toml.getTable("joinLeave")),
-                parseTabList(toml.getTable("tabList")), parsePlayers(toml.getTable("players")), parseChat(toml.getTable("chat")));
+                parseTabList(toml.getTable("tabList")), parsePlayers(toml.getTable("players")), parseChat(toml.getTable("chat")),
+                parseDiscord(toml.getTable("discord")));
+    }
+
+    private static Discord parseDiscord(Toml section) {
+        Discord d = Discord.DEFAULTS;
+        if (section == null) {
+            return d;
+        }
+        String channel = section.getString("redisChannel", d.redisChannel()).trim();
+        return new Discord(
+                section.getBoolean("enabled", d.enabled()),
+                snowflake(section, "guildId"),
+                snowflake(section, "alertChannelId"),
+                section.getString("redisHost", d.redisHost()).trim(),
+                (int) Math.max(1L, Math.min(65535L, section.getLong("redisPort", (long) d.redisPort()))),
+                section.getString("redisUser", d.redisUser()).trim(),
+                channel.isEmpty() ? d.redisChannel() : channel,
+                (int) Math.max(0L, section.getLong("wrongCodesPerTenMinutes", (long) d.wrongCodesPerTenMinutes())));
+    }
+
+    /** A Discord id written as a quoted string (recommended) or a bare number; 0 when missing or not a number. */
+    static long snowflake(Toml section, String key) {
+        Object value = section.toMap().get(key);
+        String text = value == null ? "" : value.toString().trim();
+        if (text.isEmpty()) {
+            return 0L;
+        }
+        try {
+            long id = Long.parseLong(text);
+            return id > 0 ? id : 0L;
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
     }
 
     private static Chat parseChat(Toml section) {

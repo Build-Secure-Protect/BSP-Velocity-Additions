@@ -27,3 +27,73 @@ separator = "<white>, "
 # <server> the server it came from. Everyone sees "relay"; players with players.serversPermission see "relayStaff".
 relay = "<line>"
 relayStaff = "<gray>[<server>]</gray> <line>"
+
+[discord]
+# The BSP Discord bot (Herald). Discord markdown, not MiniMessage: **bold**, *italic*. Every name and server put in
+# is escaped, so it shows exactly as written and can never mention anyone.
+# Each message has a ...Text line (what a phone notification shows) and a card: ...Title and ...Description.
+# Leave both card lines empty to send the text alone. Placeholders are listed per message.
+#
+# Steal warning DM, BSP-Core's look A. <server>, <x> <y> <z>, <thief>, <seconds>.
+warningText = "Your totem on <server> is being stolen!"
+warningTitle = "⚠ Totem under attack"
+warningDescription = ""
+warningServer = "Server"
+warningServerValue = "<server>"
+warningWhere = "Where"
+warningWhereValue = "<x> <y> <z>"
+warningThief = "Thief"
+warningThiefValue = "<thief>"
+warningTimeLeft = "Time left"
+warningTimeLeftValue = "<seconds> seconds"
+warningFooter = "Log in and stand by your totem to stop the steal."
+# Outcome DMs. <server>, <x> <y> <z>, <thief>. The saved card's description depends on why the steal stopped.
+savedText = "Your totem on <server> is safe."
+savedTitle = "✔ Steal failed"
+savedLeft = "<thief> left the totem for too long."
+savedInterrupted = "<thief> left the game or could not go on."
+savedTotemGone = "The totem was taken down, so the steal stopped."
+savedCancelled = "An operator stopped the steal."
+savedEnded = "The steal ended."
+stolenText = "Your totem on <server> was stolen."
+stolenTitle = "✖ Totem stolen"
+stolenDescription = "<thief> now owns your totem at <x> <y> <z> on <server>."
+# The public line in discord.alertChannelId. Only <server> exists here: the line never names anyone or anything else.
+channelText = ""
+channelTitle = ""
+channelDescription = "A totem is being stolen on **<server>**"
+# Answers to /link, /unlink and /linkstatus, look A (D24); only the player who typed the command sees them.
+# <name> a Minecraft name. /unlink always needs a name (D25); without one the player sees the status list.
+linkedText = ""
+linkedTitle = "Linked"
+linkedDescription = "Steal warnings for **<name>** will come to your DMs. A test message is on its way."
+linkInvalidText = ""
+linkInvalidTitle = "Code not accepted"
+linkInvalidDescription = "That code is not valid or has run out. Type **/bsp discord link** in game for a new one."
+tooManyTriesText = ""
+tooManyTriesTitle = "Too many wrong codes"
+tooManyTriesDescription = "Wait ten minutes, then type **/bsp discord link** in game for a new code."
+unavailableText = ""
+unavailableTitle = "Try again soon"
+unavailableDescription = "The game network is not answering right now. Your code still works for a few minutes."
+# <names> "A and B"; <list> one "• name" line each.
+unlinkedText = ""
+unlinkedTitle = "Unlinked"
+unlinkedDescription = "Steal warnings for **<names>** will no longer come here."
+unlinkNoMatchText = ""
+unlinkNoMatchTitle = "Not found"
+unlinkNoMatchDescription = "None of your linked accounts is called **<name>**. Type **/linkstatus** to see them."
+statusText = ""
+statusTitle = "Linked accounts"
+statusDescription = "<list>"
+statusFooter = "/unlink and a name to remove one"
+notLinkedText = ""
+notLinkedTitle = "Not linked"
+notLinkedDescription = "No Minecraft account is linked to you. Type **/bsp discord link** in game to start."
+# Direct messages after /link: the test to the new account, and a note to the account that used to get the warnings.
+testText = "Herald test: steal warnings for <name> will arrive here."
+testTitle = "✔ Herald test"
+testDescription = "This is where your totem will call you when it is being stolen."
+replacedText = "Steal warnings for <name> now go to another Discord account."
+replacedTitle = ""
+replacedDescription = ""

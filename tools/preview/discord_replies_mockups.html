@@ -1,0 +1,248 @@
+<title>Herald Bot Replies</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: brief, the replies already decided (look A, for reference), then three option cards side by side (stacked on a phone), each drawing the same six replies in drawn Discord. Dark only by choice: it shows Discord's dark theme inside the BSP board look of the other mock-ups. */
+:root {
+  --bg: #0b0e13; --panel: #10151c; --inset: #0c0e12; --line: #2a2f3a;
+  --text: #e6eaf2; --muted: #9aa3b5; --hint: #6f7788;
+  --teal: #19d3b0; --violet: #b58cff; --gold: #ffd23a; --bad: #ff6b5c;
+  --mc: 'VT323', 'Courier New', monospace; --ui: 'IBM Plex Sans', system-ui, sans-serif; --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  /* Discord's dark theme, drawn (same values as BSP-Core's discord_herald_concepts.html) */
+  --dc-bg: #313338; --dc-side: #2b2d31; --dc-embed: #2b2d31; --dc-fg: #dbdee1; --dc-head: #f2f3f5; --dc-muted: #949ba4; --dc-link: #00a8fc; --dc-bot: #5865f2; --dc-line: #3f4147; --dc-code: #1e1f22;
+  --red: #ed4245; --green: #3ba55d; --grey: #80848e;
+  color-scheme: dark;
+}
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--ui); font-size: 15px; line-height: 1.5;
+  padding-block: 28px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+main { max-width: 1240px; margin: 0 auto; display: grid; gap: 22px; }
+h1 { font-family: var(--mc); font-weight: 400; font-size: 34px; letter-spacing: .5px; margin: 0; color: var(--teal); text-wrap: balance; }
+h1 small { color: var(--muted); font-size: 22px; margin-left: 10px; }
+p { margin: 0; max-width: 76ch; color: var(--muted); }
+p b, li b { color: var(--text); font-weight: 600; }
+code { font-family: var(--mono); font-size: 12.5px; color: var(--text); }
+.warn { border-left: 3px solid var(--gold); padding: 8px 12px; background: rgba(255,210,58,.08); color: var(--text); max-width: 82ch; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 18px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px 14px 16px; display: grid; gap: 10px; min-width: 0; align-content: start; }
+.card.opt { border-color: var(--teal); }
+.card header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.card h2 { font-family: var(--mc); font-weight: 400; font-size: 26px; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+.tag { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border: 1px solid; border-radius: 3px; white-space: nowrap; }
+.tag.a { color: var(--gold); border-color: var(--gold); background: rgba(255,210,58,.12); }
+.tag.b { color: var(--teal); border-color: var(--teal); background: rgba(25,211,176,.12); }
+.tag.c { color: var(--violet); border-color: var(--violet); background: rgba(181,140,255,.12); }
+.cap { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--hint); }
+.note { font-size: 13px; color: var(--hint); }
+.note b { color: var(--muted); font-weight: 600; }
+
+/* drawn Discord */
+.dc { background: var(--dc-bg); color: var(--dc-fg); border-radius: 6px; overflow: hidden; font-family: "gg sans", "Noto Sans", var(--ui); font-size: 13.5px; line-height: 1.35; }
+.dc .bar { background: var(--dc-side); color: var(--dc-head); font-weight: 600; font-size: 13px; padding: 7px 12px; border-bottom: 1px solid var(--dc-code); display: flex; gap: 6px; }
+.dc .bar .h { color: var(--dc-muted); font-weight: 400; }
+.feed { padding: 6px 0 10px; display: flex; flex-direction: column; }
+.cmd { color: var(--dc-muted); font-size: 12px; padding: 4px 12px 0 60px; overflow-wrap: anywhere; }
+.cmd b { color: var(--dc-link); font-weight: 500; }
+.cmd .arg { font-family: var(--mono); background: var(--dc-code); padding: 0 3px; border-radius: 3px; font-size: 11.5px; color: var(--dc-fg); }
+.m { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 0 12px; padding: 4px 12px; }
+.av { width: 36px; height: 36px; border-radius: 50%; background: var(--panel); display: grid; place-items: center; border: 1px solid var(--violet); }
+.av i { width: 12px; height: 18px; background: linear-gradient(var(--teal), var(--violet)); clip-path: polygon(50% 0, 100% 30%, 80% 100%, 20% 100%, 0 30%); display: block; }
+.txt { min-width: 0; overflow-wrap: anywhere; }
+.txt strong { color: var(--dc-head); }
+.who { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.who b { color: var(--dc-head); font-weight: 600; }
+.who .app { background: var(--dc-bot); color: #fff; font-size: 10px; font-weight: 600; padding: 0 4px; border-radius: 3px; line-height: 15px; }
+.who .t { color: var(--dc-muted); font-size: 11.5px; }
+.eph { color: var(--dc-muted); font-size: 11.5px; margin-top: 4px; }
+.eph::before { content: "👁 "; font-size: 11px; }
+.embed { margin-top: 4px; background: var(--dc-embed); border-left: 4px solid var(--edge, var(--dc-bot)); border-radius: 4px; padding: 8px 12px 10px; display: flex; flex-direction: column; gap: 5px; max-width: 420px; min-width: 0; }
+.embed .ti { font-weight: 600; color: var(--dc-head); font-size: 14.5px; }
+.embed .de { font-size: 13px; }
+.embed .ft { color: var(--dc-muted); font-size: 11px; }
+.embed ul { margin: 0; padding-left: 18px; }
+.e-red { --edge: var(--red); } .e-green { --edge: var(--green); } .e-grey { --edge: var(--grey); } .e-blurple { --edge: var(--dc-bot); }
+.plain .ic { font-weight: 600; }
+.plain .ic.bad { color: var(--red); } .plain .ic.ok { color: var(--green); }
+
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--hint); font-weight: 600; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; }
+td { color: var(--muted); }
+.scroll { overflow-x: auto; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<main>
+  <h1>Herald Bot Replies <small>VA-D1 · mock-up set 1</small></h1>
+  <p>The Discord bot's answers that the picked look A (BSP-Core <code>discord_herald_concepts.html</code>) did not draw yet: a code that does not work, the test DM, <code>/unlink</code>, <code>/linkstatus</code>, and the answer when the bot cannot reach the game network. The warning, outcome and channel cards and the green <b>Linked</b> card stay exactly as picked. Every answer to a command is seen only by the player who typed it. No answer ever shows a Discord name or number.</p>
+  <p class="warn"><b>Decided 2026-10-25 (D24): option A, cards throughout.</b> <code>/unlink</code> always needs a name (D25), so nobody unlinks every account by accident; the drawings below show <code>/unlink name: Mrgregles_Alt</code>. The same example everywhere: the Discord user who types the commands has linked two Minecraft accounts, <b>Mrgregles</b> and <b>Mrgregles_Alt</b> (D22).</p>
+
+  <div class="cards">
+    <!-- A -->
+    <section class="card opt" aria-labelledby="a-h">
+      <header><h2 id="a-h">A · Cards throughout</h2><span class="tag a">chosen</span></header>
+      <p>Every answer is a card in look A's colours: red for a problem, green for done, grey for information. It matches the warning DMs exactly.</p>
+
+      <span class="cap">/link with a wrong or used code</span>
+      <div class="dc"><div class="feed">
+        <div class="cmd">used <b>/link</b> <span class="arg">code: K7QX2M</span></div>
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span></div>
+          <div class="embed e-red"><div class="ti">Code not accepted</div><div class="de">That code is not valid or has run out. Type <strong>/bsp discord link</strong> in game for a new one.</div></div>
+          <div class="eph">Only you can see this</div></div></div>
+      </div></div>
+
+      <span class="cap">Test DM after /link</span>
+      <div class="dc"><div class="bar"><span class="h">@</span>BSP Herald</div><div class="feed">
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span><span class="t">Today at 21:02</span></div>
+          Herald test: steal warnings for Mrgregles will arrive here.
+          <div class="embed e-green"><div class="ti">✔ Herald test</div><div class="de">This is where your totem will call you when it is being stolen.</div></div></div></div>
+      </div></div>
+
+      <span class="cap">/unlink</span>
+      <div class="dc"><div class="feed">
+        <div class="cmd">used <b>/unlink</b> <span class="arg">name: Mrgregles_Alt</span></div>
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span></div>
+          <div class="embed e-grey"><div class="ti">Unlinked</div><div class="de">Steal warnings for <strong>Mrgregles_Alt</strong> will no longer come here.</div></div>
+          <div class="eph">Only you can see this</div></div></div>
+      </div></div>
+
+      <span class="cap">/linkstatus</span>
+      <div class="dc"><div class="feed">
+        <div class="cmd">used <b>/linkstatus</b></div>
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span></div>
+          <div class="embed e-grey"><div class="ti">Linked accounts</div><div class="de"><ul><li>Mrgregles</li><li>Mrgregles_Alt</li></ul></div><div class="ft">/unlink and a name to remove one</div></div>
+          <div class="eph">Only you can see this</div></div></div>
+      </div></div>
+
+      <span class="cap">Nothing linked (/unlink or /linkstatus)</span>
+      <div class="dc"><div class="feed">
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span></div>
+          <div class="embed e-grey"><div class="ti">Not linked</div><div class="de">No Minecraft account is linked to you. Type <strong>/bsp discord link</strong> in game to start.</div></div>
+          <div class="eph">Only you can see this</div></div></div>
+      </div></div>
+
+      <span class="cap">The bot cannot reach the game network</span>
+      <div class="dc"><div class="feed">
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span></div>
+          <div class="embed e-red"><div class="ti">Try again soon</div><div class="de">The game network is not answering right now. Your code still works for a few minutes.</div></div>
+          <div class="eph">Only you can see this</div></div></div>
+      </div></div>
+    </section>
+
+    <!-- B -->
+    <section class="card opt" aria-labelledby="b-h">
+      <header><h2 id="b-h">B · Cards for results</h2><span class="tag b">mixed</span></header>
+      <p>Things that change something (link, unlink) and the status list are cards. Problems and the test DM are a single plain line with a coloured mark, like a quick note.</p>
+
+      <span class="cap">/link with a wrong or used code</span>
+      <div class="dc"><div class="feed">
+        <div class="cmd">used <b>/link</b> <span class="arg">code: K7QX2M</span></div>
+        <div class="m"><div class="av"><i></i></div><div class="txt plain"><div class="who"><b>BSP Herald</b><span class="app">APP</span></div>
+          <span class="ic bad">✖</span> That code is not valid or has run out. Type <strong>/bsp discord link</strong> in game for a new one.
+          <div class="eph">Only you can see this</div></div></div>
+      </div></div>
+
+      <span class="cap">Test DM after /link</span>
+      <div class="dc"><div class="bar"><span class="h">@</span>BSP Herald</div><div class="feed">
+        <div class="m"><div class="av"><i></i></div><div class="txt plain"><div class="who"><b>BSP Herald</b><span class="app">APP</span><span class="t">Today at 21:02</span></div>
+          <span class="ic ok">✔</span> Herald test: steal warnings for <strong>Mrgregles</strong> will arrive here.</div></div>
+      </div></div>
+
+      <span class="cap">/unlink</span>
+      <div class="dc"><div class="feed">
+        <div class="cmd">used <b>/unlink</b> <span class="arg">name: Mrgregles_Alt</span></div>
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span></div>
+          <div class="embed e-grey"><div class="ti">Unlinked</div><div class="de">Steal warnings for <strong>Mrgregles_Alt</strong> will no longer come here.</div></div>
+          <div class="eph">Only you can see this</div></div></div>
+      </div></div>
+
+      <span class="cap">/linkstatus</span>
+      <div class="dc"><div class="feed">
+        <div class="cmd">used <b>/linkstatus</b></div>
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span></div>
+          <div class="embed e-blurple"><div class="ti">Linked accounts</div><div class="de"><ul><li>Mrgregles</li><li>Mrgregles_Alt</li></ul></div></div>
+          <div class="eph">Only you can see this</div></div></div>
+      </div></div>
+
+      <span class="cap">Nothing linked (/unlink or /linkstatus)</span>
+      <div class="dc"><div class="feed">
+        <div class="m"><div class="av"><i></i></div><div class="txt plain"><div class="who"><b>BSP Herald</b><span class="app">APP</span></div>
+          No Minecraft account is linked to you. Type <strong>/bsp discord link</strong> in game to start.
+          <div class="eph">Only you can see this</div></div></div>
+      </div></div>
+
+      <span class="cap">The bot cannot reach the game network</span>
+      <div class="dc"><div class="feed">
+        <div class="m"><div class="av"><i></i></div><div class="txt plain"><div class="who"><b>BSP Herald</b><span class="app">APP</span></div>
+          <span class="ic bad">✖</span> The game network is not answering right now. Try again in a minute; your code still works.
+          <div class="eph">Only you can see this</div></div></div>
+      </div></div>
+    </section>
+
+    <!-- C -->
+    <section class="card opt" aria-labelledby="c-h">
+      <header><h2 id="c-h">C · Plain lines</h2><span class="tag c">quietest</span></header>
+      <p>Only the alerts and the green <b>Linked</b> card are cards. Every other answer is one plain sentence, so the alerts stand out and nothing else looks urgent. The test DM uses the brief's sentence word for word.</p>
+
+      <span class="cap">/link with a wrong or used code</span>
+      <div class="dc"><div class="feed">
+        <div class="cmd">used <b>/link</b> <span class="arg">code: K7QX2M</span></div>
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span></div>
+          That code is not valid or has run out. Type /bsp discord link in game for a new one.
+          <div class="eph">Only you can see this</div></div></div>
+      </div></div>
+
+      <span class="cap">Test DM after /link</span>
+      <div class="dc"><div class="bar"><span class="h">@</span>BSP Herald</div><div class="feed">
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span><span class="t">Today at 21:02</span></div>
+          Herald test: steal warnings for Mrgregles will arrive here.</div></div>
+      </div></div>
+
+      <span class="cap">/unlink</span>
+      <div class="dc"><div class="feed">
+        <div class="cmd">used <b>/unlink</b> <span class="arg">name: Mrgregles_Alt</span></div>
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span></div>
+          Unlinked Mrgregles_Alt. Steal warnings for it will no longer come here.
+          <div class="eph">Only you can see this</div></div></div>
+      </div></div>
+
+      <span class="cap">/linkstatus</span>
+      <div class="dc"><div class="feed">
+        <div class="cmd">used <b>/linkstatus</b></div>
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span></div>
+          Linked to you: Mrgregles, Mrgregles_Alt.
+          <div class="eph">Only you can see this</div></div></div>
+      </div></div>
+
+      <span class="cap">Nothing linked (/unlink or /linkstatus)</span>
+      <div class="dc"><div class="feed">
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span></div>
+          No Minecraft account is linked to you. Type /bsp discord link in game to start.
+          <div class="eph">Only you can see this</div></div></div>
+      </div></div>
+
+      <span class="cap">The bot cannot reach the game network</span>
+      <div class="dc"><div class="feed">
+        <div class="m"><div class="av"><i></i></div><div class="txt"><div class="who"><b>BSP Herald</b><span class="app">APP</span></div>
+          The game network is not answering right now. Try again in a minute; your code still works.
+          <div class="eph">Only you can see this</div></div></div>
+      </div></div>
+    </section>
+  </div>
+
+  <section class="card" aria-labelledby="cfg-h">
+    <h2 id="cfg-h" style="font-family:var(--mc);font-weight:400;font-size:24px;margin:0;">Where the words live</h2>
+    <p>Whichever option wins, every sentence is a line in <code>messages.toml</code> under <code>[discord]</code>, so the owner can reword them without a new build. The pick decides only which answers are cards and which are plain text.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Answer</th><th>Key</th><th>A</th><th>B</th><th>C</th></tr></thead>
+      <tbody>
+        <tr><td>Wrong or used code</td><td><code>discord.linkInvalid</code></td><td>red card</td><td>plain ✖</td><td>plain</td></tr>
+        <tr><td>Test DM</td><td><code>discord.testDm</code></td><td>text + green card</td><td>plain ✔</td><td>plain</td></tr>
+        <tr><td>Unlinked</td><td><code>discord.unlinked</code></td><td>grey card</td><td>grey card</td><td>plain</td></tr>
+        <tr><td>Linked accounts</td><td><code>discord.status</code></td><td>grey card</td><td>blurple card</td><td>plain</td></tr>
+        <tr><td>Nothing linked</td><td><code>discord.notLinked</code></td><td>grey card</td><td>plain</td><td>plain</td></tr>
+        <tr><td>Network not answering</td><td><code>discord.unavailable</code></td><td>red card</td><td>plain ✖</td><td>plain</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note"><b>Unchanged in every option:</b> the warning, saved and stolen DMs, the grey <code>#totem-alerts</code> line and the green <b>Linked</b> card, exactly as picked in BSP-Core's look A.</p>
+  </section>
+</main>

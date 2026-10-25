@@ -108,3 +108,25 @@ Untested on the proxy:
 - [ ] Rejoin: switch servers, disconnect, reconnect; you arrive on the second server (the last-server steps above).
 - [ ] Chat: a line from one backend appears once on another (the shared-chat steps above).
 - [ ] With LuckPerms-Forge on the shared database: a rank prefix still shows in the tab list and `/players`.
+
+## 2026-10-25: the BSP Discord bot (task T15, BSP-Core request VA-D1)
+
+Unit tests (59 new, 122 in all) cover every rule with a fake Discord and a fake Redis: who gets which DM, the public line's only field, a 429 waited out and one that outlasts the steal, three tries at most and one log line, a closed DM (50007) setting the week-long undelivered flag, unknown and reused and expired codes, the wrong-code limit, Redis down, a new link replacing an old one, several accounts per Discord user, `/unlink` needing a name, `/linkstatus`, the unlink message from the game, the flags restored at start, markdown escaping, and no Discord id in any log line or Redis value. Also checked here: the plugin loads on a local Velocity with the bot off (one line), and with the bot on but no `BSP_DISCORD_TOKEN` (one warning, nothing started); JDA and its relocated libraries load from the shaded jar and build a message.
+
+**Nothing has been tried against the real Discord.** Logging in, registering the commands, the DMs and the channel post are untested until the owner runs them. Setup: `docs/DISCORD.md`.
+
+- [ ] Follow `docs/DISCORD.md` steps 1 to 6. Start the proxy: the log shows `Discord bot: starting`, `Herald: listening on Redis`, `Herald is logged in to Discord` and `/link, /unlink and /linkstatus are ready in the BSP Discord`.
+- [ ] The log never shows the token, the Redis password or any Discord id (search the log for the first digits of your own Discord id).
+- [ ] In Discord, type `/` in the BSP Discord: `/link`, `/unlink` and `/linkstatus` appear with their descriptions. In a DM with the bot they do not.
+- [ ] In game, `/bsp discord link`; in Discord `/link` with the code: the green **Linked** card, seen only by you; a test DM arrives; `/bsp discord status` in game says linked within about 5 s.
+- [ ] `/link` with the same code again: **Code not accepted**. With a made-up code: the same. After five wrong codes: **Too many wrong codes**; ten minutes later it works again.
+- [ ] Link a second Minecraft account to the same Discord account: `/linkstatus` lists both names and nothing else, with "/unlink and a name to remove one" under them.
+- [ ] From another Discord account, `/link` a fresh code for the first Minecraft account: the old Discord account gets "Steal warnings for <name> now go to another Discord account."; warnings now go to the new one.
+- [ ] With Herald on a totem, start a steal (a second player): after the thief's Shroud, the owner's DM shows the red card with Server, Where, Thief and Time left, and the phone notification reads "Your totem on <server> is being stolen!". The alert channel shows only "A totem is being stolen on **<server>**".
+- [ ] Walk the thief away until the steal fails: a green "✔ Steal failed" DM with the reason. Let a steal finish: a red "✖ Totem stolen" DM.
+- [ ] A totem without Herald: the channel line only, no DM. A player who never linked: no DM, nothing extra in public.
+- [ ] Turn off DMs from server members (Discord: the BSP server → Privacy Settings), start a steal: nothing public; at your next login BSP-Core tells you the warning could not reach you (BSP-Core's part, once built); the link stays.
+- [ ] `/unlink` asks for a name (Discord will not send it without one). `/unlink` and one of your names: **Unlinked**, only that account; Herald's card in game shows "not linked" within about 5 s. A name that is not yours: **Not found**. Unlinking in game removes the link from `discord-links.json` too.
+- [ ] Stop Redis for a minute while the proxy runs: one `Redis ... is not answering` line, `/link` answers **Try again soon** and the code still works afterwards; when Redis is back, `Redis answers again` and the links are marked again.
+- [ ] Remove the bot's Send Messages permission in the alert channel and start a steal: one `could not send a public steal line ... MISSING_PERMISSION` line, not one per steal.
+- [ ] Restart the proxy: links survive (`discord-links.json`), and `Herald: N Discord link(s) marked in Redis` shows the right N.

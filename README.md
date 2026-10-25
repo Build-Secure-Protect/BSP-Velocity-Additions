@@ -9,6 +9,8 @@ Features, in order of work:
 3. **Network-wide player list and tab list** (built): everyone in everyone's tab list with their LuckPerms prefix, a two-line header, a footer with the count and your ping; `/players` for a list. No server is shown to normal players. Replaces Velocitab.
 4. **Join and leave messages for the whole network** (built): shown once when a player really joins or leaves, never when BSP-Teleport moves them between servers. Each backend's own vanilla lines are switched off with `suppressJoinLeaveMessages = true` in BSP-Teleport 0.2.0's server config, on every backend at once.
 
+5. **The BSP Discord bot** (built, untested against the real Discord): Herald's steal warnings by direct message, the public "A totem is being stolen on <server>" line, and `/link`, `/unlink` and `/linkstatus` in the BSP Discord. Off by default; setup in [`docs/DISCORD.md`](docs/DISCORD.md).
+
 Companion to the BSP Forge mods on the backends: BSP-Core, BSP-Region Guard, BSP-Teleport, BSP-RankUp and BSP-InventorySync. Anything this plugin needs from them is optional on their side, so a server without a proxy loses nothing.
 
 ## Requirements

@@ -43,3 +43,23 @@ enabled = true
 useBackendFormatting = true
 # Also print relayed lines to the proxy console.
 logToConsole = true
+
+[discord]
+# The BSP Discord bot: Herald steal warnings by direct message, the public "A totem is being stolen on <server>" line,
+# and /link, /unlink and /linkstatus in the BSP Discord. Off by default; the setup guide is docs/DISCORD.md.
+# The bot's token is never written here: it is read only from the environment variable BSP_DISCORD_TOKEN on this
+# machine. Without it the bot stays off.
+enabled = false
+# The BSP Discord server's id and the id of the channel for the public line. Turn on Developer Mode in Discord,
+# right-click the server or the channel, "Copy ID". Keep the quotes. An empty alertChannelId sends no public line.
+guildId = ""
+alertChannelId = ""
+# Redis, where BSP-Core sends the alerts and the link codes. The password is never written here: it is read only
+# from the environment variable BSP_REDIS_PASSWORD. redisUser is the Redis ACL user; empty means the default user.
+redisHost = "127.0.0.1"
+redisPort = 6379
+redisUser = ""
+# Must equal discord.redisChannel in BSP-Core's server config on every backend.
+redisChannel = "bsp_core:discord"
+# How many wrong codes one Discord user may type into /link in ten minutes before /link waits. 0 means no limit.
+wrongCodesPerTenMinutes = 5
