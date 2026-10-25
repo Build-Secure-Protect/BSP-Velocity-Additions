@@ -4,12 +4,16 @@ All notable changes to BSP-Velocity Additions. The format follows [Keep a Change
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-25
+
 ### Added
 - **The BSP Discord bot (Herald, BSP-Core request VA-D1):** one bot login on the proxy, off by default (`[discord]` in `config.toml`). It reads BSP-Core's steal alerts from Redis (`bsp_core:discord`) and sends the totem's owner a direct message when their totem is being stolen and when the steal ends, and posts "A totem is being stolen on <server>" in one channel, naming nothing else. `/link CODE`, `/unlink name` (a name is always needed, so nobody unlinks everything by accident) and `/linkstatus` in the BSP Discord, answered so only the player sees it. The token comes only from `BSP_DISCORD_TOKEN` and the Redis password only from `BSP_REDIS_PASSWORD`; neither is ever in a file or the log. Only the Discord user id is kept beside each Minecraft account (`discord-links.json`), never logged or sent to the game servers. Discord's rate limits are honoured, at most three tries per message, failures logged once. Setup guide: `docs/DISCORD.md`. Untested against the real Discord.
 - JDA 6.7.0 is shaded into the jar with its libraries relocated under `com.mrgregles.bsp_velocity_additions.shaded`; its voice parts (opus, Tink) are left out. The jar is now about 13 MB.
 
 ### Changed
 - README: backends may be standard Forge 1.20.1 or Mohist; the plugin needs no change for either (the network moves to Forge on 2026-10-21).
+
+## [0.1.0] - 2026-10-18
 
 ### Fixed
 - Backends with a large mod list were reported as "not answering" (bug B1): Velocity cannot decode a modded server's status reply, so the status ping failed although the server was up. Reachability now comes from a plain TCP connection check, and a server with any player connected always counts as reachable. The failure reason is logged once per outage.

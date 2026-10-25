@@ -113,7 +113,7 @@ Untested on the proxy:
 
 Unit tests (59 new, 122 in all) cover every rule with a fake Discord and a fake Redis: who gets which DM, the public line's only field, a 429 waited out and one that outlasts the steal, three tries at most and one log line, a closed DM (50007) setting the week-long undelivered flag, unknown and reused and expired codes, the wrong-code limit, Redis down, a new link replacing an old one, several accounts per Discord user, `/unlink` needing a name, `/linkstatus`, the unlink message from the game, the flags restored at start, markdown escaping, and no Discord id in any log line or Redis value. Also checked here: the plugin loads on a local Velocity with the bot off (one line), and with the bot on but no `BSP_DISCORD_TOKEN` (one warning, nothing started); JDA and its relocated libraries load from the shaded jar and build a message.
 
-**Nothing has been tried against the real Discord.** Logging in, registering the commands, the DMs and the channel post are untested until the owner runs them. Setup: `docs/DISCORD.md`.
+The jar is `build/libs/bsp_velocity_additions-0.2.0.jar`; the proxy log shows `Loaded plugin bsp_velocity_additions 0.2.0`. **Nothing has been tried against the real Discord.** Logging in, registering the commands, the DMs and the channel post are untested until the owner runs them. Setup: `docs/DISCORD.md`.
 
 - [ ] Follow `docs/DISCORD.md` steps 1 to 6. Start the proxy: the log shows `Discord bot: starting`, `Herald: listening on Redis`, `Herald is logged in to Discord` and `/link, /unlink and /linkstatus are ready in the BSP Discord`.
 - [ ] The log never shows the token, the Redis password or any Discord id (search the log for the first digits of your own Discord id).
