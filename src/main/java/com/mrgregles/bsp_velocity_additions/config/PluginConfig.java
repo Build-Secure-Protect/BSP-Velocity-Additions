@@ -9,7 +9,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 /**
@@ -17,7 +19,7 @@ import java.util.stream.Collectors;
  * bundled template, so the comments in the file are the documentation. Missing keys take their defaults.
  */
 public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList tabList, Players players, Chat chat,
-                           Discord discord) {
+                           Discord discord, JourneyMap journeyMap) {
 
     public static final String FILE_NAME = "config.toml";
 
@@ -90,9 +92,20 @@ public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList t
         }
     }
 
+    /**
+     * Settings for JourneyMap world ids (T19, decisions D28 to D30): the proxy answers {@code worldinfo:world_id} for
+     * every backend so each server gets its own map folder on the client. {@code worldIds} maps a server name (lower
+     * case) to an id that replaces the derived one; it is checked when the feature starts.
+     */
+    public record JourneyMap(boolean enabled, boolean debug, boolean debugAllChannels, int switchResendDelayMs,
+                             Map<String, String> worldIds) {
+
+        public static final JourneyMap DEFAULTS = new JourneyMap(true, false, false, 1500, Map.of());
+    }
+
     public static PluginConfig defaults() {
         return new PluginConfig(LastServer.DEFAULTS, JoinLeave.DEFAULTS, TabList.DEFAULTS, Players.DEFAULTS, Chat.DEFAULTS,
-                Discord.DEFAULTS);
+                Discord.DEFAULTS, JourneyMap.DEFAULTS);
     }
 
     /** Creates the file from the template when it is missing, then reads it. A broken file falls back to the defaults. */
@@ -119,7 +132,34 @@ public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList t
     static PluginConfig parse(Toml toml) {
         return new PluginConfig(parseLastServer(toml.getTable("lastServer")), parseJoinLeave(toml.getTable("joinLeave")),
                 parseTabList(toml.getTable("tabList")), parsePlayers(toml.getTable("players")), parseChat(toml.getTable("chat")),
-                parseDiscord(toml.getTable("discord")));
+                parseDiscord(toml.getTable("discord")), parseJourneyMap(toml.getTable("journeyMap")));
+    }
+
+    private static JourneyMap parseJourneyMap(Toml section) {
+        JourneyMap d = JourneyMap.DEFAULTS;
+        if (section == null) {
+            return d;
+        }
+        Map<String, String> ids = new TreeMap<>();
+        Toml table = section.getTable("worldIds");
+        if (table != null) {
+            for (Map.Entry<String, Object> e : table.toMap().entrySet()) {
+                String server = unquote(e.getKey()).trim().toLowerCase(Locale.ROOT);
+                if (!server.isEmpty() && e.getValue() != null) {
+                    ids.put(server, e.getValue().toString().trim());
+                }
+            }
+        }
+        return new JourneyMap(
+                section.getBoolean("enabled", d.enabled()),
+                section.getBoolean("debug", d.debug()),
+                section.getBoolean("debugAllChannels", d.debugAllChannels()),
+                (int) Math.max(0L, Math.min(60_000L, section.getLong("switchResendDelayMs", (long) d.switchResendDelayMs()))),
+                Map.copyOf(ids));
+    }
+
+    private static String unquote(String key) {
+        return key.length() >= 2 && key.startsWith("\"") && key.endsWith("\"") ? key.substring(1, key.length() - 1) : key;
     }
 
     private static Discord parseDiscord(Toml section) {

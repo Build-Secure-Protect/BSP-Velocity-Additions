@@ -4,6 +4,9 @@ All notable changes to BSP-Velocity Additions. The format follows [Keep a Change
 
 ## [Unreleased]
 
+### Added
+- **JourneyMap world ids from the proxy:** every server gets its own JourneyMap map folder on the client. The proxy answers JourneyMap's request on `worldinfo:world_id` with the id of the server the player is on, never forwards it, drops any reply a server sends, and sends the id again 1.5 s after every server switch (only to clients that have asked, so clients without JourneyMap get nothing). Ids come from each server's velocity.toml name and never change; `[journeyMap.worldIds]` in `config.toml` can pin one. `debug` logs every message on the channel with its bytes; `debugAllChannels` logs the channels each client registers. Packet layout checked against JourneyMap 6.0.7. Untested with a real JourneyMap client.
+
 ## [0.2.0] - 2026-10-25
 
 ### Added

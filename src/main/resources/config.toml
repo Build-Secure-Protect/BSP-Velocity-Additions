@@ -63,3 +63,23 @@ redisUser = ""
 redisChannel = "bsp_core:discord"
 # How many wrong codes one Discord user may type into /link in ten minutes before /link waits. 0 means no limit.
 wrongCodesPerTenMinutes = 5
+
+[journeyMap]
+# JourneyMap world ids. Behind the proxy every server has the same address, so the JourneyMap client can tell the
+# servers apart only by a world id. With this on, the proxy is the only source of it: it answers the client's
+# request on worldinfo:world_id with the id of the server the player is on, never forwards the request, drops any
+# reply a server sends, and sends the id again after every server switch (only to clients that have asked once).
+# Clients without JourneyMap never get anything. Each server's id comes from its velocity.toml name and never
+# changes; set one in [journeyMap.worldIds] to keep an id a server already uses.
+enabled = true
+# Log every worldinfo:world_id message: direction, player, server, the bytes in hex and the id.
+debug = false
+# For a test session: log the channels each client registers (shows any other JourneyMap channel) and the name,
+# direction and size of every plugin message on the channels this proxy listens to. Velocity shows plugins no others.
+debugAllChannels = false
+# How long after a server switch the id is sent again, in milliseconds (0 to 60000).
+switchResendDelayMs = 1500
+
+[journeyMap.worldIds]
+# Server name = id. Letters, digits, - and _ only, at most 64 characters. Example:
+# "BSP-Spawn" = "cc7a1dc1-1f9f-4922-83e4-cb353ca585cd"

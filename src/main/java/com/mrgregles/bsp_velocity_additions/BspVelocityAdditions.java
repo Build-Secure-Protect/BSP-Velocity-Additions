@@ -5,6 +5,8 @@ import com.mrgregles.bsp_velocity_additions.config.Messages;
 import com.mrgregles.bsp_velocity_additions.config.PluginConfig;
 import com.mrgregles.bsp_velocity_additions.chat.ChatRelayFeature;
 import com.mrgregles.bsp_velocity_additions.discord.DiscordFeature;
+import com.mrgregles.bsp_velocity_additions.journeymap.WorldIdFeature;
+import com.mrgregles.bsp_velocity_additions.journeymap.WorldIds;
 import com.mrgregles.bsp_velocity_additions.joinleave.JoinLeaveFeature;
 import com.mrgregles.bsp_velocity_additions.players.PlayersCommand;
 import com.mrgregles.bsp_velocity_additions.tablist.LuckPermsPrefixes;
@@ -40,7 +42,7 @@ import java.util.Optional;
         id = BspVelocityAdditions.ID,
         name = "BSP-Velocity Additions",
         version = BuildConstants.VERSION,
-        description = "Last server, shared chat, network tab list, join/leave messages and the Discord bot for the BSP proxy.",
+        description = "Last server, shared chat, network tab list, join/leave messages, JourneyMap world ids and the Discord bot for the BSP proxy.",
         url = "https://github.com/Build-Secure-Protect",
         authors = {"Mrgregles"},
         dependencies = {@Dependency(id = "luckperms", optional = true)}
@@ -109,7 +111,27 @@ public final class BspVelocityAdditions {
                         ? config.players().serversPermission() : "the console only");
             }
         }
+        if (config.journeyMap().enabled()) {
+            startJourneyMap(config.journeyMap());
+        } else {
+            logger.info("journeyMap.enabled is false; JourneyMap world ids come from the servers, if any");
+        }
         discord = DiscordFeature.start(config.discord(), messages, dataDirectory, System::getenv, logger).orElse(null);
+    }
+
+    private void startJourneyMap(PluginConfig.JourneyMap settings) {
+        WorldIds ids = new WorldIds(settings.worldIds(), logger);
+        WorldIdFeature.Later later = (millis, task) -> proxy.getScheduler().buildTask(this, task)
+                .delay(Duration.ofMillis(millis)).schedule();
+        proxy.getChannelRegistrar().register(WorldIdFeature.IDENTIFIER);
+        proxy.getEventManager().register(this, new WorldIdFeature(settings, ids, later, logger));
+        logger.info("JourneyMap world ids: on, answered by the proxy on {}, sent again {} ms after a switch{}{}",
+                WorldIdFeature.CHANNEL, settings.switchResendDelayMs(),
+                settings.debug() ? ", debug on" : "", settings.debugAllChannels() ? ", channel debug on" : "");
+        for (RegisteredServer server : proxy.getAllServers()) {
+            String name = server.getServerInfo().getName();
+            logger.info("JourneyMap world id for {}: {}{}", name, ids.idOf(name), ids.isOverridden(name) ? " (from config)" : "");
+        }
     }
 
     private void startLastServer(PluginConfig.LastServer settings) {

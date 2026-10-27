@@ -127,4 +127,36 @@ class PluginConfigTest {
             }
         }
     }
+
+    @Test
+    void journeyMapIdsAreOnByDefaultAndReadTheirOverrides(@TempDir Path dir) throws Exception {
+        assertEquals(PluginConfig.JourneyMap.DEFAULTS, PluginConfig.load(dir.resolve("fresh"), mock(Logger.class)).journeyMap());
+        assertTrue(PluginConfig.JourneyMap.DEFAULTS.enabled());
+
+        Files.writeString(dir.resolve(PluginConfig.FILE_NAME), """
+                [journeyMap]
+                enabled = true
+                debug = true
+                debugAllChannels = true
+                switchResendDelayMs = 99999
+
+                [journeyMap.worldIds]
+                "BSP-Spawn" = "cc7a1dc1-1f9f-4922-83e4-cb353ca585cd"
+                BSP-Frostwarf = "frost"
+                """);
+        PluginConfig.JourneyMap j = PluginConfig.load(dir, mock(Logger.class)).journeyMap();
+
+        assertTrue(j.debug());
+        assertTrue(j.debugAllChannels());
+        assertEquals(60_000, j.switchResendDelayMs(), "capped at a minute");
+        assertEquals(java.util.Map.of("bsp-spawn", "cc7a1dc1-1f9f-4922-83e4-cb353ca585cd", "bsp-frostwarf", "frost"), j.worldIds());
+    }
+
+    @Test
+    void theBundledTemplateParsesWithItsEmptyOverrideTable() throws Exception {
+        Path dir = Files.createTempDirectory("bspva");
+        PluginConfig.JourneyMap j = PluginConfig.load(dir, mock(Logger.class)).journeyMap();
+
+        assertEquals(PluginConfig.JourneyMap.DEFAULTS, j);
+    }
 }

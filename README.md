@@ -11,6 +11,8 @@ Features, in order of work:
 
 5. **The BSP Discord bot** (built, untested against the real Discord): Herald's steal warnings by direct message, the public "A totem is being stolen on <server>" line, and `/link`, `/unlink` and `/linkstatus` in the BSP Discord. Off by default; setup in [`docs/DISCORD.md`](docs/DISCORD.md).
 
+6. **Separate JourneyMap maps per server** (built, untested with a real client): the proxy gives each server its own JourneyMap world id, on join and after every switch, so maps from different servers never mix. `[journeyMap]` in `config.toml`.
+
 Companion to the BSP Forge mods on the backends: BSP-Core, BSP-Region Guard, BSP-Teleport, BSP-RankUp and BSP-InventorySync. Anything this plugin needs from them is optional on their side, so a server without a proxy loses nothing.
 
 ## Requirements

@@ -130,3 +130,19 @@ The jar is `build/libs/bsp_velocity_additions-0.2.0.jar`; the proxy log shows `L
 - [ ] Stop Redis for a minute while the proxy runs: one `Redis ... is not answering` line, `/link` answers **Try again soon** and the code still works afterwards; when Redis is back, `Redis answers again` and the links are marked again.
 - [ ] Remove the bot's Send Messages permission in the alert channel and start a steal: one `could not send a public steal line ... MISSING_PERMISSION` line, not one per steal.
 - [ ] Restart the proxy: links survive (`discord-links.json`), and `Herald: N Discord link(s) marked in Redis` shows the right N.
+
+## 2026-10-27: JourneyMap world ids (task T19)
+
+Unit tests (26 new, 148 in all) cover the packet layout read from JourneyMap 6.0.7's jar (`00 00 2A`, then the id as a Minecraft string; the request is `00 00 2A 00`), the stable name-based ids and the overrides, a request answered by the proxy and not forwarded, a backend's reply dropped, the resend after a switch and only for clients that asked, a request in the middle of a switch answered with the new server's id, stale resends after quick switches dropped, nothing for a player who left, and the debug lines. Checked here: the plugin loads on a local Velocity and logs one id per server. **Nothing has been tried with a real JourneyMap client.**
+
+Background found before building: every backend has `useWorldId: "false"` in `journeymap/server/6.0/journeymap.server.global.config`, so no backend sends an id today and every server's map shares one client folder. With this feature on, that setting no longer matters (the proxy answers and drops backend replies); leave it as it is.
+
+- [ ] Start the proxy: one `JourneyMap world ids: on` line and one `JourneyMap world id for <server>: <id>` line per server in velocity.toml, each id different.
+- [ ] Set `debug = true` and `debugAllChannels = true` under `[journeyMap]` in `config.toml`, restart the proxy, join with the BSP client. The log shows `client <you> registers channels: [...]` (note any `journeymap:` channel), then `client -> proxy ... 00 00 2a 00 = (request, no id)` and `proxy -> client (reply) ... = <id>`. Copy these lines into the bug log if anything looks different.
+- [ ] Fresh login to server A: in `.minecraft/journeymap/data/mp/` (or the CurseForge instance folder) a new folder appears whose name ends in A's id.
+- [ ] `/server B` (or a portal or warp): about 1.5 s later the log shows `proxy -> client (resend after switch) ... on B`; the client switches to a folder ending in B's id and the map shows only B's terrain. Also note whether a `client -> proxy` request appears after the switch: if it does, the client asks again by itself.
+- [ ] Switch back and forth five times quickly: the map never mixes tiles, and only one resend goes out after the last switch.
+- [ ] Restart the proxy and the backends: the ids in the start-up lines are the same as before, and the client keeps using the same folders.
+- [ ] Put `"BSP-Spawn" = "test-override-1"` under `[journeyMap.worldIds]`, restart the proxy: the start-up line says `(from config)` and the client uses a folder ending in `test-override-1`. Remove it again (or keep a real id you want).
+- [ ] Join with a client that has no JourneyMap (vanilla, or the pack without it): no kick, no error, and no `proxy -> client` line for that player.
+- [ ] Turn `debug` and `debugAllChannels` off again, restart the proxy.
