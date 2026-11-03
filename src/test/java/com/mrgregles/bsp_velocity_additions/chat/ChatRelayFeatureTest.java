@@ -12,10 +12,13 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -84,6 +87,12 @@ class ChatRelayFeatureTest {
         return captor.getAllValues().stream().findFirst().map(ChatRelayFeatureTest::plain);
     }
 
+    private static Component staffLineSentTo(Player p) {
+        ArgumentCaptor<Component> captor = ArgumentCaptor.forClass(Component.class);
+        verify(p).sendMessage(captor.capture());
+        return captor.getValue();
+    }
+
     @Test
     void aLineFromABackendReachesOtherServersOnlyAndIsHandled() {
         PluginMessageEvent event = fromBackend("BSP-Wild", RelayPayloadTest.chat(steve.getUniqueId(), "Steve", "hi all", JSON, "BSP-Wild"));
@@ -92,7 +101,8 @@ class ChatRelayFeatureTest {
 
         assertFalse(event.getResult().isAllowed(), "handled: the bytes do not go on to the client");
         assertEquals(Optional.of("<Steve> hi all"), lineSentTo(nadia), "the backend's own decorated line, rendered from its JSON");
-        assertEquals(Optional.of("[BSP-Wild] <Steve> hi all"), lineSentTo(mod), "staff see the server tag");
+        assertEquals(Optional.of("<Steve> hi all"), lineSentTo(mod).map(l -> l.substring(l.indexOf(' ') + 1)));
+        ServerTagTest.assertIsTheServerTag(staffLineSentTo(mod).children().get(0), "BSP-Wild");
         verify(steve, never()).sendMessage(any(Component.class));
         verify(alex, never()).sendMessage(any(Component.class));
         verify(limbo, never()).sendMessage(any(Component.class));
@@ -155,6 +165,29 @@ class ChatRelayFeatureTest {
         verify(logger, org.mockito.Mockito.times(1)).warn(any(String.class), any(), any());
         ArgumentCaptor<Component> captor = ArgumentCaptor.forClass(Component.class);
         verify(mod, org.mockito.Mockito.times(2)).sendMessage(captor.capture());
-        assertEquals("[BSP-Wild] <Steve> hi", plain(captor.getAllValues().get(0)));
+        ServerTagTest.assertIsTheServerTag(captor.getAllValues().get(0).children().get(0), "BSP-Wild");
+    }
+
+    /** SU-VA1: the tag works in chat.relay too when the owner puts it there; the console keeps the plain server name. */
+    @Test
+    void theOwnerCanGiveEveryoneTheTagAndTheConsoleStaysText(@TempDir Path dir) throws Exception {
+        Files.writeString(dir.resolve(Messages.FILE_NAME), "[chat]\nrelay = \"<server_tag> <line>\"\n");
+        feature = new ChatRelayFeature(proxy, new PluginConfig.Chat(true, true, true),
+                new PluginConfig.Players(true, "bspva.players.servers"), Messages.load(dir, logger), logger);
+
+        feature.onPluginMessage(fromBackend("BSP-Wild", RelayPayloadTest.chat(steve.getUniqueId(), "Steve", "hi all", JSON, "BSP-Wild")));
+
+        ServerTagTest.assertIsTheServerTag(staffLineSentTo(nadia).children().get(0), "BSP-Wild");
+        verify(logger).info("[{}] {}", "BSP-Wild", "<Steve> hi all");
+    }
+
+    /** B4: the console shows the line itself, not the key of the translatable component the backend sends. */
+    @Test
+    void theConsoleLineShowsNameAndTextForATranslatableLine() {
+        String translatable = "{\"translate\":\"chat.type.text\",\"with\":[{\"text\":\"Steve\"},{\"text\":\"hi all\"}]}";
+
+        feature.onPluginMessage(fromBackend("BSP-Wild", RelayPayloadTest.chat(steve.getUniqueId(), "Steve", "hi all", translatable, "BSP-Wild")));
+
+        verify(logger).info("[{}] {}", "BSP-Wild", "<Steve> hi all");
     }
 }

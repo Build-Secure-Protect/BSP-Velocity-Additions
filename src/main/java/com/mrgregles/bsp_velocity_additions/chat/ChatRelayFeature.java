@@ -11,7 +11,6 @@ import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.slf4j.Logger;
 
 import java.util.Optional;
@@ -77,7 +76,9 @@ public final class ChatRelayFeature {
             viewer.sendMessage(seesServers ? staff : everyone);
         }
         if (config.logToConsole()) {
-            logger.info("[{}] {}", originServer, PlainTextComponentSerializer.plainText().serialize(line));
+            // From the payload's own fields: the backend's line is usually the translatable chat.type.text, which a
+            // plain serializer turns into its key, not the words (bug B4). Players' clients translate it themselves.
+            logger.info("[{}] {}", originServer, "<" + payload.name() + "> " + payload.text());
         }
     }
 
@@ -97,6 +98,7 @@ public final class ChatRelayFeature {
         return messages.render(key,
                 Placeholder.component("line", line),
                 Placeholder.unparsed("server", server),
+                ServerTag.placeholder(server, messages),
                 Placeholder.unparsed("player", payload.name()),
                 Placeholder.unparsed("text", payload.text()));
     }

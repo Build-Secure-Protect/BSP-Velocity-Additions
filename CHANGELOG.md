@@ -4,7 +4,13 @@ All notable changes to BSP-Velocity Additions. The format follows [Keep a Change
 
 ## [Unreleased]
 
+### Fixed
+- The network tab list failed on the live proxy with `NoSuchMethodError: TabList.buildEntry(...)` every 3 seconds once two players were online (bug B3): the plugin called an 8-argument form that is in the newer Velocity API it compiles against but not in the proxy (git-91bdcebb-b467). It now uses the 7-argument form both have.
+- The proxy console showed `chat.type.text` for every relayed chat line (bug B4); it now shows `<Name> message`. Players were never affected.
+
 ### Added
+- **`<server_tag>`, server images in chat (BSP-Server Utilities request SU-VA1):** a new placeholder beside `<server>` in `chat.relay`, `chat.relayStaff` and `players.staffServer`. It is the server's image from BSP-Server Utilities (key `bsp_server_utilities.server_image.<name in lower case>`, font `bsp_server_utilities:server_tags`, white so the image keeps its colours); a server with no image shows the grey `[BSP-Spawn]` text as before. Hovering it shows the new line `chat.serverTagHover` (default `<white><server>`). The bundled `chat.relayStaff` is now `<server_tag> <line>`. `<server>`, `chat.relay`, `players.staffServer`, the console line and Discord are unchanged. **An existing `messages.toml` keeps its old `relayStaff` line** (`<gray>[<server>]</gray> <line>`) until you change it to `relayStaff = "<server_tag> <line>"`; `serverTagHover` comes from the bundled file until you add it. Untested with a real client.
+- `tools/check_proxy_api.sh`: checks, before a release, that the built jar calls no Velocity or Adventure method the network's proxy lacks.
 - **JourneyMap world ids from the proxy:** every server gets its own JourneyMap map folder on the client. The proxy answers JourneyMap's request on `worldinfo:world_id` with the id of the server the player is on, never forwards it, drops any reply a server sends, and sends the id again 1.5 s after every server switch (only to clients that have asked, so clients without JourneyMap get nothing). Ids come from each server's velocity.toml name and never change; `[journeyMap.worldIds]` in `config.toml` can pin one. `debug` logs every message on the channel with its bytes; `debugAllChannels` logs the channels each client registers. Packet layout checked against JourneyMap 6.0.7. Untested with a real JourneyMap client.
 
 ## [0.2.0] - 2026-10-25

@@ -82,6 +82,24 @@ class PlayersCommandTest {
         assertEquals(List.of("Online (3) on 2 server(s)", "BSP-Spawn (1): Steve", "BSP-Wild (2): Alex, bram"), linesSentTo(steve, 3));
     }
 
+    /** SU-VA1: players.staffServer takes {@code <server_tag>} when the owner wants the image there; its default stays text. */
+    @Test
+    void staffServerTakesTheServerTag(@org.junit.jupiter.api.io.TempDir java.nio.file.Path dir) throws Exception {
+        java.nio.file.Files.writeString(dir.resolve(Messages.FILE_NAME), "[players]\nstaffServer = \"<server_tag> (<count>): <names>\"\n");
+        Messages owner = Messages.load(dir, mock(org.slf4j.Logger.class));
+        PluginConfig.TabList tab = new PluginConfig.TabList(true, 3, "bspva.tab.staff");
+        command = new PlayersCommand(proxy, new PluginConfig.Players(true, "bspva.players.servers"), owner,
+                new NameFormatter(tab, owner, PrefixProvider.NONE));
+        when(steve.hasPermission("bspva.players.servers")).thenReturn(true);
+
+        command.execute(invocationBy(steve));
+
+        ArgumentCaptor<Component> captor = ArgumentCaptor.forClass(Component.class);
+        verify(steve, times(3)).sendMessage(captor.capture());
+        com.mrgregles.bsp_velocity_additions.chat.ServerTagTest.assertIsTheServerTag(
+                captor.getAllValues().get(1).children().get(0), "BSP-Spawn");
+    }
+
     @Test
     void theConsoleAlwaysSeesServers() {
         ConsoleCommandSource console = mock(ConsoleCommandSource.class);

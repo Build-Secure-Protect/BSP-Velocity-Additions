@@ -146,3 +146,24 @@ Background found before building: every backend has `useWorldId: "false"` in `jo
 - [ ] Put `"BSP-Spawn" = "test-override-1"` under `[journeyMap.worldIds]`, restart the proxy: the start-up line says `(from config)` and the client uses a folder ending in `test-override-1`. Remove it again (or keep a real id you want).
 - [ ] Join with a client that has no JourneyMap (vanilla, or the pack without it): no kick, no error, and no `proxy -> client` line for that player.
 - [ ] Turn `debug` and `debugAllChannels` off again, restart the proxy.
+
+## 2026-11-02: bugs B3 (tab list on the live proxy) and B4 (console chat line)
+
+B3: the tab list called an 8-argument `TabList.buildEntry` that the live proxy (`git-91bdcebb-b467`) does not have; it now uses the 7-argument form both have. B4: the console printed `chat.type.text` for relayed chat; it now prints `<name> text`. Tests: `TabListFeatureTest` (the 7-argument call; the network's `velocity.jar` has it and not the 8) and `ChatRelayFeatureTest` (the console line for a translatable line); both failed against the old code. New: `tools/check_proxy_api.sh` lists every Velocity and Adventure method the built jar calls and fails if the proxy's `velocity.jar` lacks one; it flags the old 0.2.0 jar and passes the fixed one. Untested on the live proxy until the owner installs the rebuilt jar.
+
+- [ ] Before installing: `tools/check_proxy_api.sh` prints `OK: the proxy has all of them.`
+- [ ] Install the rebuilt `bsp_velocity_additions-0.2.0.jar`, restart the proxy, have two or more players online on different servers: no `NoSuchMethodError` and no `Exception in task ... BSP-Velocity Additions` lines.
+- [ ] Each player's tab list shows everyone on the network, and the list stays complete after a server switch.
+- [ ] A chat line on one server shows in the proxy console as `[BSP-Spawn] <Name> message`, not `chat.type.text`.
+
+## 2026-11-03: `<server_tag>`, server images in chat (BSP-Server Utilities request SU-VA1)
+
+The new placeholder is a translatable component: key `bsp_server_utilities.server_image.<server in lower case>`, fallback `%s`, argument the grey `[BSP-Spawn]` text, white, font `bsp_server_utilities:server_tags`, hover from `chat.serverTagHover`. The bundled `chat.relayStaff` is `<server_tag> <line>`. Tests (12 new, 160 in all): `ServerTagTest` (every part of the component; it survives `GlobalTranslator.render`; the network's own `velocity.jar` renders it and writes the 1.20 JSON with `fallback` and the grey argument; the hover from `messages.toml`; an old `messages.toml` keeps its `relayStaff` and gets the bundled hover), `ChatRelayFeatureTest` (staff get the tag; the owner can put it in `chat.relay`; the console keeps `[BSP-Wild] <Steve> ...`) and `PlayersCommandTest` (`players.staffServer` takes it). `tools/check_proxy_api.sh` passes against the network's `velocity.jar`. **Nothing has been tried with a real client or with BSP-Server Utilities' images (SU-27).**
+
+- [ ] Before installing: `tools/check_proxy_api.sh` prints `OK: the proxy has all of them.`
+- [ ] In the proxy's `plugins/bsp_velocity_additions/messages.toml`, under `[chat]`, change `relayStaff` to `"<server_tag> <line>"` (the live file keeps the old line until you do) and add `serverTagHover = "<white><server>"` if you want to change the hover. Restart the proxy.
+- [ ] Before Server Utilities' images are on (or for a server with no image): a staff player on another server sees `[BSP-Spawn] <Name> message` with `[BSP-Spawn]` grey, as before. Hovering `[BSP-Spawn]` shows `BSP-Spawn` in white.
+- [ ] With Server Utilities' images on: the staff player sees the server's image instead of `[BSP-Spawn]`, in its own colours (not tinted grey), one line high, and the same hover.
+- [ ] A player without `players.serversPermission` sees the line with no tag, as before.
+- [ ] The proxy console still shows `[BSP-Spawn] <Name> message`; Discord messages still name the server as text.
+- [ ] Optional: put `<server_tag>` in `players.staffServer` (for example `"<server_tag> <gray>(<count>):</gray> <names>"`), restart, `/players` as staff shows the images; the console's `/players` shows `[BSP-Spawn]`.

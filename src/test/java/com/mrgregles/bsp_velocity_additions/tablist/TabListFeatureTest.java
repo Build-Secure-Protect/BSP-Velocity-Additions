@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -56,7 +57,7 @@ class TabListFeatureTest {
         when(p.getPing()).thenReturn(42L);
         TabList list = mock(TabList.class);
         when(list.getEntry(any())).thenReturn(Optional.empty());
-        when(list.buildEntry(any(), any(), anyInt(), anyInt(), any(), anyBoolean(), anyInt(), anyBoolean()))
+        when(list.buildEntry(any(), any(), anyInt(), anyInt(), any(), anyBoolean(), anyInt()))
                 .thenAnswer(inv -> {
                     TabListEntry e = mock(TabListEntry.class);
                     when(e.getProfile()).thenReturn(inv.getArgument(0));
@@ -136,5 +137,35 @@ class TabListFeatureTest {
         assertEquals("[Owner] Alex", plain(names.nameOf(alex)), "the bundled staffMark is empty, so only the prefix shows");
         assertEquals("[Owner] Steve", plain(names.nameOf(steve)));
         verify(steve, org.mockito.Mockito.atLeastOnce()).hasPermission(eq("bspva.tab.staff"));
+    }
+
+    /**
+     * B3: the proxy (velocity.jar git-91bdcebb-b467) has no 8-argument buildEntry; the newer API snapshot the plugin
+     * compiles against does. Entries must be built with the 7-argument form, which both have.
+     */
+    @Test
+    void entriesAreBuiltWithTheFormTheLiveProxyHas() {
+        feature.refreshAll();
+
+        TabList list = steve.getTabList();
+        verify(list).buildEntry(any(), any(), anyInt(), anyInt(), any(), anyBoolean(), anyInt());
+        verify(list, never()).buildEntry(any(), any(), anyInt(), anyInt(), any(), anyBoolean(), anyInt(), anyBoolean());
+    }
+
+    /** B3: the network's own velocity.jar (copied to server/ for the local proxy) has the 7-argument form and not the 8. */
+    @Test
+    void theNetworksVelocityJarHasTheSevenArgumentFormOnly() throws Exception {
+        java.nio.file.Path jar = java.nio.file.Path.of("server", "velocity.jar");
+        org.junit.jupiter.api.Assumptions.assumeTrue(java.nio.file.Files.exists(jar), "no local copy of the proxy jar");
+        try (java.net.URLClassLoader proxyJar = new java.net.URLClassLoader(new java.net.URL[] {jar.toUri().toURL()}, null)) {
+            Class<?> tabList = proxyJar.loadClass("com.velocitypowered.api.proxy.player.TabList");
+            Class<?> profile = proxyJar.loadClass("com.velocitypowered.api.util.GameProfile");
+            Class<?> component = proxyJar.loadClass("net.kyori.adventure.text.Component");
+            Class<?> session = proxyJar.loadClass("com.velocitypowered.api.proxy.player.ChatSession");
+
+            tabList.getMethod("buildEntry", profile, component, int.class, int.class, session, boolean.class, int.class);
+            assertThrows(NoSuchMethodException.class, () -> tabList.getMethod("buildEntry", profile, component,
+                    int.class, int.class, session, boolean.class, int.class, boolean.class));
+        }
     }
 }

@@ -97,7 +97,9 @@ public final class TabListFeature {
                     entry.setLatency((int) other.getPing());
                 }
             } else if (!other.getUniqueId().equals(viewer.getUniqueId())) {
-                list.addEntry(list.buildEntry(other.getGameProfile(), name, (int) other.getPing(), 0, null, true, 0, true));
+                // The 7-argument form (listOrder, no showHat): the live proxy (git-91bdcebb-b467) has no 8-argument
+                // buildEntry, although the newer API snapshot we compile against does (bug B3).
+                list.addEntry(list.buildEntry(other.getGameProfile(), name, (int) other.getPing(), 0, null, true, 0));
                 mine.add(other.getUniqueId());
             }
         }

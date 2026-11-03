@@ -1,5 +1,6 @@
 package com.mrgregles.bsp_velocity_additions.players;
 
+import com.mrgregles.bsp_velocity_additions.chat.ServerTag;
 import com.mrgregles.bsp_velocity_additions.config.Messages;
 import com.mrgregles.bsp_velocity_additions.config.PluginConfig;
 import com.mrgregles.bsp_velocity_additions.tablist.NameFormatter;
@@ -66,6 +67,7 @@ public final class PlayersCommand implements SimpleCommand {
                     Placeholder.unparsed("servers", Integer.toString(byServer.size()))));
             byServer.forEach((server, players) -> source.sendMessage(messages.render(KEY_STAFF_SERVER,
                     Placeholder.unparsed("server", server),
+                    ServerTag.placeholder(server, messages),
                     Placeholder.unparsed("count", Integer.toString(players.size())),
                     Placeholder.component("names", join(players)))));
             return;
