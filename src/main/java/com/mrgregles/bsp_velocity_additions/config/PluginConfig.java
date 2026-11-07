@@ -51,10 +51,14 @@ public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList t
         }
     }
 
-    /** Settings for the network tab list (feature 3, decisions D3, D9, D16). */
-    public record TabList(boolean enabled, int refreshSeconds, String staffPermission) {
+    /**
+     * Settings for the network tab list (feature 3, decisions D3, D9, D16). {@code rankRefreshSeconds}: how often each
+     * online player's LuckPerms user is reloaded from storage, so a rank changed on a backend shows without a relog
+     * (bug B6); 0 switches it off.
+     */
+    public record TabList(boolean enabled, int refreshSeconds, String staffPermission, int rankRefreshSeconds) {
 
-        public static final TabList DEFAULTS = new TabList(true, 3, "bspva.tab.staff");
+        public static final TabList DEFAULTS = new TabList(true, 3, "bspva.tab.staff", 30);
 
         public boolean hasStaffPermission() {
             return !staffPermission.isBlank();
@@ -213,7 +217,8 @@ public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList t
         return new TabList(
                 section.getBoolean("enabled", d.enabled()),
                 (int) Math.max(1L, section.getLong("refreshSeconds", (long) d.refreshSeconds())),
-                section.getString("staffPermission", d.staffPermission()).trim());
+                section.getString("staffPermission", d.staffPermission()).trim(),
+                (int) Math.max(0L, section.getLong("rankRefreshSeconds", (long) d.rankRefreshSeconds())));
     }
 
     private static Players parsePlayers(Toml section) {

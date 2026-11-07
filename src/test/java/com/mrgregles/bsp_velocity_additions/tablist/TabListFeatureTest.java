@@ -44,7 +44,7 @@ class TabListFeatureTest {
     @BeforeEach
     void setUp() {
         when(proxy.getAllPlayers()).thenReturn(List.of(steve, alex, lobbyless));
-        PluginConfig.TabList config = new PluginConfig.TabList(true, 3, "bspva.tab.staff");
+        PluginConfig.TabList config = new PluginConfig.TabList(true, 3, "bspva.tab.staff", 30);
         feature = new TabListFeature(proxy, Messages.defaults(), new NameFormatter(config, Messages.defaults(), PrefixProvider.NONE));
     }
 
@@ -130,7 +130,7 @@ class TabListFeatureTest {
     @Test
     void theStaffMarkAndPrefixShowInTheName() {
         when(alex.hasPermission("bspva.tab.staff")).thenReturn(true);
-        PluginConfig.TabList config = new PluginConfig.TabList(true, 3, "bspva.tab.staff");
+        PluginConfig.TabList config = new PluginConfig.TabList(true, 3, "bspva.tab.staff", 30);
         Messages m = Messages.defaults();
         NameFormatter names = new NameFormatter(config, m, p -> Component.text("[Owner] "));
 

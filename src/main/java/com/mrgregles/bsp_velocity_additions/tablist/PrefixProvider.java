@@ -10,4 +10,8 @@ public interface PrefixProvider {
 
     /** The prefix as a component, with its own trailing space if it has text, or {@link Component#empty()}. */
     Component prefixOf(Player player);
+
+    /** Reloads the player's rank from storage, in the background (bug B6). Nothing without LuckPerms. */
+    default void reload(Player player) {
+    }
 }

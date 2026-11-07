@@ -12,6 +12,7 @@ import com.mrgregles.bsp_velocity_additions.players.PlayersCommand;
 import com.mrgregles.bsp_velocity_additions.tablist.LuckPermsPrefixes;
 import com.mrgregles.bsp_velocity_additions.tablist.NameFormatter;
 import com.mrgregles.bsp_velocity_additions.tablist.PrefixProvider;
+import com.mrgregles.bsp_velocity_additions.tablist.RankRefresher;
 import com.mrgregles.bsp_velocity_additions.tablist.TabListFeature;
 import com.velocitypowered.api.command.CommandMeta;
 import com.mrgregles.bsp_velocity_additions.lastserver.InitialServerChooser;
@@ -96,6 +97,13 @@ public final class BspVelocityAdditions {
         if (config.tabList().enabled() || config.players().enabled()) {
             PrefixProvider prefixes = LuckPermsPrefixes.detect(logger);
             NameFormatter names = new NameFormatter(config.tabList(), messages, prefixes);
+            if (prefixes != PrefixProvider.NONE && config.tabList().rankRefreshSeconds() > 0) {
+                RankRefresher ranks = new RankRefresher(proxy, prefixes);
+                proxy.getScheduler().buildTask(this, ranks::reloadAll)
+                        .repeat(Duration.ofSeconds(config.tabList().rankRefreshSeconds()))
+                        .schedule();
+                logger.info("Ranks: reloaded from LuckPerms every {} s", config.tabList().rankRefreshSeconds());
+            }
             if (config.tabList().enabled()) {
                 TabListFeature tabList = new TabListFeature(proxy, messages, names);
                 proxy.getEventManager().register(this, tabList);

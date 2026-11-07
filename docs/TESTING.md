@@ -161,9 +161,30 @@ B3: the tab list called an 8-argument `TabList.buildEntry` that the live proxy (
 The new placeholder is a translatable component: key `bsp_server_utilities.server_image.<server in lower case>`, fallback `%s`, argument the grey `[BSP-Spawn]` text, white, font `bsp_server_utilities:server_tags`, hover from `chat.serverTagHover`. The bundled `chat.relayStaff` is `<server_tag> <line>`. Tests (12 new, 160 in all): `ServerTagTest` (every part of the component; it survives `GlobalTranslator.render`; the network's own `velocity.jar` renders it and writes the 1.20 JSON with `fallback` and the grey argument; the hover from `messages.toml`; an old `messages.toml` keeps its `relayStaff` and gets the bundled hover), `ChatRelayFeatureTest` (staff get the tag; the owner can put it in `chat.relay`; the console keeps `[BSP-Wild] <Steve> ...`) and `PlayersCommandTest` (`players.staffServer` takes it). `tools/check_proxy_api.sh` passes against the network's `velocity.jar`. **Nothing has been tried with a real client or with BSP-Server Utilities' images (SU-27).**
 
 - [ ] Before installing: `tools/check_proxy_api.sh` prints `OK: the proxy has all of them.`
-- [ ] In the proxy's `plugins/bsp_velocity_additions/messages.toml`, under `[chat]`, change `relayStaff` to `"<server_tag> <line>"` (the live file keeps the old line until you do) and add `serverTagHover = "<white><server>"` if you want to change the hover. Restart the proxy.
+- [ ] In the proxy's `plugins/bsp_velocity_additions/messages.toml`: if `[chat]` has its own `relayStaff` line, change it to `"<server_tag> <line>"`; if there is no such line, nothing to do (a missing line uses the bundled default). Add `serverTagHover = "<white><server>"` only to change the hover. Never two `[chat]` headings. Restart the proxy.
 - [ ] Before Server Utilities' images are on (or for a server with no image): a staff player on another server sees `[BSP-Spawn] <Name> message` with `[BSP-Spawn]` grey, as before. Hovering `[BSP-Spawn]` shows `BSP-Spawn` in white.
 - [ ] With Server Utilities' images on: the staff player sees the server's image instead of `[BSP-Spawn]`, in its own colours (not tinted grey), one line high, and the same hover.
 - [ ] A player without `players.serversPermission` sees the line with no tag, as before.
 - [ ] The proxy console still shows `[BSP-Spawn] <Name> message`; Discord messages still name the server as text.
 - [ ] Optional: put `<server_tag>` in `players.staffServer` (for example `"<server_tag> <gray>(<count>):</gray> <names>"`), restart, `/players` as staff shows the images; the console's `/players` shows `[BSP-Spawn]`.
+
+## 2026-11-07: bug B6, a new rank shows without a relog
+
+The proxy reloads each online player's LuckPerms user from storage every `tabList.rankRefreshSeconds` (30), the same reload LuckPerms does when another server announces a change. Tests (5 new, 165 in all): `RankRefresherTest` (a rank changed in storage shows in another player's tab list after the next reload and not before; only players on a server are reloaded; the LuckPerms side reads the cached prefix and reloads with `UserManager.loadUser`; a failing reload is quiet) and `PluginConfigTest.readsRankRefreshSeconds`. Three of the `RankRefresherTest` tests failed with the reload taken out. `tools/check_proxy_api.sh` passes. **Untested on the live proxy.**
+
+- [ ] Restart the proxy with the new jar: a `Ranks: reloaded from LuckPerms every 30 s` line after `LuckPerms found on the proxy`.
+- [ ] Two players online on different servers. Rank one of them up with BSP-RankUp (or SET RANK in its admin screen): within 30 s both players' tab lists show the new prefix, with no relog. `/players` shows it too.
+- [ ] The same with both players on the same server.
+- [ ] Set `rankRefreshSeconds = 0` under `[tabList]`, restart: no `Ranks:` line, and a rank change shows only after a relog again (as before). Set it back to 30.
+- [ ] Once BSP-RankUp 0.6.0 (VA-RU1, TELL OTHER SERVERS on in its OPTIONS) is on the backends and each backend's `config/luckperms/luckperms.conf` uses `messaging-service = "redis"` (or `"auto"` with `redis.enabled = true`) on the proxy's Redis: a rank-up shows in `/players` on the proxy within a second or two instead of up to 30 s. RankUp's OPTIONS info box should read `LuckPerms messaging: redis`.
+
+## 2026-11-07: BSP-RankUp's names in the tab list (RankUp request RU-R3, task T23)
+
+Option A of `tools/preview/rankup_tab_names_mockups.html`: a name a backend gives is left alone; a player on another server gets the name their own backend gives them (read from their own entry in their own tab list, which Velocity keeps up to date from the backend's packets, checked in the network's `velocity.jar`: `VelocityTabList.processUpsert` stores `UPDATE_DISPLAY_NAME`); `tabList.entry` only where a backend gives none, and a name the plugin set is remembered so it is never mistaken for the backend's. Tests: `TabListNamesTest` (7, against a tab list that keeps names like the proxy's; 4 failed against the old code), 172 in all. `tools/check_proxy_api.sh` passes. **Untested on the live proxy and with RankUp's images on a second server.**
+
+- [ ] Two players on BSP-Spawn and one on another server, RankUp's prefix display on. Every row in every player's tab list shows RankUp's look: the rank image (or RankUp's text prefix for a rank without one) and any suffix, for players on the same server and on other servers.
+- [ ] The images of a player on another server draw correctly (not as `[Miner]` text or a box), which shows RankUp sends every client the whole image set.
+- [ ] Rank the player on the other server up: within about 5 s (RankUp's redraw) plus 3 s (the proxy's refresh), the new image shows in the tab lists on BSP-Spawn too.
+- [ ] Switch servers a few times: the names stay right after each switch, and nobody is listed twice.
+- [ ] Turn RankUp's prefix display off in its OPTIONS: within a few seconds every row shows the proxy's text form (`[Miner] Alex`) instead. Turn it on again: RankUp's look comes back.
+- [ ] `/players` still lists names with text prefixes.

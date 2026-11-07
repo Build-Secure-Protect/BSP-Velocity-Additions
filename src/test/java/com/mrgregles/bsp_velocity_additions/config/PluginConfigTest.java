@@ -25,6 +25,16 @@ class PluginConfigTest {
         assertFalse(config.lastServer().hasFallbackServer());
     }
 
+    /** B6: the rank reload is on every 30 s by default, 0 switches it off, and a negative value counts as off. */
+    @Test
+    void readsRankRefreshSeconds(@TempDir Path dir) throws Exception {
+        assertEquals(30, PluginConfig.load(dir.resolve("defaults"), mock(Logger.class)).tabList().rankRefreshSeconds());
+        Files.writeString(dir.resolve(PluginConfig.FILE_NAME), "[tabList]\nrankRefreshSeconds = 0\n");
+        assertEquals(0, PluginConfig.load(dir, mock(Logger.class)).tabList().rankRefreshSeconds());
+        Files.writeString(dir.resolve(PluginConfig.FILE_NAME), "[tabList]\nrankRefreshSeconds = -5\n");
+        assertEquals(0, PluginConfig.load(dir, mock(Logger.class)).tabList().rankRefreshSeconds());
+    }
+
     @Test
     void readsTheJoinLeaveSection(@TempDir Path dir) throws Exception {
         Files.writeString(dir.resolve(PluginConfig.FILE_NAME), """

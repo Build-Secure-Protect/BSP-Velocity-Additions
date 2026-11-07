@@ -20,6 +20,7 @@ dependencies {
     annotationProcessor "com.velocitypowered:velocity-api:${velocity_api_version}"
     // Optional at run time: prefixes for the tab list and /players when LuckPerms-Velocity is installed (D4).
     compileOnly "net.luckperms:api:${luckperms_api_version}"
+    testImplementation "net.luckperms:api:${luckperms_api_version}"
     // The BSP Discord bot (VA-D1, D20). Shaded with its libraries relocated (see shadowJar). Velocity already
     // provides SLF4J, so JDA logs into the proxy's console. Voice is never used, so opus and Tink (JDA's voice
     // encryption, which also pulls in protobuf and a second Gson) are left out.

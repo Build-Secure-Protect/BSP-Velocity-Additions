@@ -33,13 +33,34 @@ public final class LuckPermsPrefixes {
         private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacyAmpersand();
 
         static PrefixProvider create() {
-            net.luckperms.api.LuckPerms api = net.luckperms.api.LuckPermsProvider.get(); // throws IllegalStateException when not loaded
-            return player -> {
-                try {
-                    String prefix = Optional.ofNullable(api.getPlayerAdapter(Player.class).getMetaData(player).getPrefix()).orElse("");
-                    return prefix.isBlank() ? Component.empty() : LEGACY.deserialize(prefix).append(Component.text(" "));
-                } catch (RuntimeException e) {
-                    return Component.empty(); // a player LuckPerms has not loaded yet
+            return forApi(net.luckperms.api.LuckPermsProvider.get()); // throws IllegalStateException when not loaded
+        }
+
+        static PrefixProvider forApi(net.luckperms.api.LuckPerms api) {
+            return new PrefixProvider() {
+                @Override
+                public Component prefixOf(Player player) {
+                    try {
+                        String prefix = Optional.ofNullable(api.getPlayerAdapter(Player.class).getMetaData(player).getPrefix()).orElse("");
+                        return prefix.isBlank() ? Component.empty() : LEGACY.deserialize(prefix).append(Component.text(" "));
+                    } catch (RuntimeException e) {
+                        return Component.empty(); // a player LuckPerms has not loaded yet
+                    }
+                }
+
+                /**
+                 * LuckPerms-Velocity keeps a user as loaded at login. A rank changed through LuckPerms' API on a
+                 * backend (BSP-RankUp's {@code modifyUser}) is saved to storage but announced to no other server, so
+                 * the proxy reloads it here: the same {@code loadUser} LuckPerms runs when a {@code userupdate}
+                 * message arrives, which refreshes the cached user in place.
+                 */
+                @Override
+                public void reload(Player player) {
+                    try {
+                        api.getUserManager().loadUser(player.getUniqueId());
+                    } catch (RuntimeException e) {
+                        // LuckPerms shutting down or storage unreachable: the next round tries again
+                    }
                 }
             };
         }

@@ -28,6 +28,9 @@ enabled = true
 refreshSeconds = 3
 # Players with this permission get the staff mark from messages.toml in front of their name. Empty disables it.
 staffPermission = "bspva.tab.staff"
+# How often, in seconds, each online player's rank is reloaded from LuckPerms' storage, so a rank BSP-RankUp (or
+# anything else) changes on a game server shows in the tab list and /players without logging out. 0 switches it off.
+rankRefreshSeconds = 30
 
 [players]
 # The /players command (alias /online): names only for everyone.

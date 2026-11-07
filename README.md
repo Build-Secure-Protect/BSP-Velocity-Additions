@@ -6,7 +6,7 @@ Features, in order of work:
 
 1. **Last server** (built, see below): a player who leaves the network comes back to the server they were on. If that server is offline they go to spawn instead of being refused.
 2. **Shared chat** across every server behind the proxy (built, proxy side): needs BSP-Core 1.3.0 with `proxy.relayChat = true` on every backend. Team chat and blocked chat never cross, because the backend decides what was public.
-3. **Network-wide player list and tab list** (built): everyone in everyone's tab list with their LuckPerms prefix, a two-line header, a footer with the count and your ping; `/players` for a list. No server is shown to normal players. Replaces Velocitab.
+3. **Network-wide player list and tab list** (built): everyone in everyone's tab list with the name their own server gives them (BSP-RankUp's prefix images and suffixes), or their LuckPerms prefix as text where the server gives none, a two-line header, a footer with the count and your ping; `/players` for a list. No server is shown to normal players. Replaces Velocitab.
 4. **Join and leave messages for the whole network** (built): shown once when a player really joins or leaves, never when BSP-Teleport moves them between servers. Each backend's own vanilla lines are switched off with `suppressJoinLeaveMessages = true` in BSP-Teleport 0.2.0's server config, on every backend at once.
 
 5. **The BSP Discord bot** (built, untested against the real Discord): Herald's steal warnings by direct message, the public "A totem is being stolen on <server>" line, and `/link`, `/unlink` and `/linkstatus` in the BSP Discord. Off by default; setup in [`docs/DISCORD.md`](docs/DISCORD.md).
@@ -39,6 +39,7 @@ Companion to the BSP Forge mods on the backends: BSP-Core, BSP-Region Guard, BSP
 | `joinLeave.enabled` | `true` | Announce real network joins and leaves to everyone. |
 | `joinLeave.silentPermission` | `bspva.joinleave.silent` | Players with this permission produce no lines. Empty disables the check. |
 | `tabList.enabled` | `true` | Everyone on the network in everyone's tab list. |
+| `tabList.rankRefreshSeconds` | `30` | How often each online player's rank is reloaded from LuckPerms, so a rank change shows without a relog; `0` off. |
 | `tabList.refreshSeconds` | `3` | How often the footer and names are refreshed. |
 | `tabList.staffPermission` | `bspva.tab.staff` | Players with it get `tabList.staffMark` before their name. |
 | `players.enabled` | `true` | The `/players` and `/online` commands. |
@@ -51,7 +52,7 @@ A section missing from an older `config.toml` runs with its defaults; copy it fr
 
 ## Messages (`messages.toml`)
 
-Every line a player can see, in [MiniMessage](https://docs.advntr.dev/minimessage/format.html). Join and leave lines take `<player>` and `<server>`; the tab list header and footer take `<online>` and `<ping>`; each name (`tabList.entry`) takes `<player>`, `<prefix>` and `<staff>`; `/players` lines take `<online>`, `<names>`, `<servers>`, `<server>` and `<count>`; relayed chat (`chat.relay` for everyone, `chat.relayStaff` for staff) takes `<line>`, `<player>`, `<text>` and `<server>`. Server switches are never announced and the tab list never shows a server, by design: both would let players track each other. A line you delete falls back to the bundled default. Restart the proxy after editing.
+Every line a player can see, in [MiniMessage](https://docs.advntr.dev/minimessage/format.html). Join and leave lines take `<player>` and `<server>`; the tab list header and footer take `<online>` and `<ping>`; each name (`tabList.entry`, used only where a player's server gives no name of its own) takes `<player>`, `<prefix>` and `<staff>`; `/players` lines take `<online>`, `<names>`, `<servers>`, `<server>` and `<count>`; relayed chat (`chat.relay` for everyone, `chat.relayStaff` for staff) takes `<line>`, `<player>`, `<text>` and `<server>`. Server switches are never announced and the tab list never shows a server, by design: both would let players track each other. A line you delete falls back to the bundled default. Restart the proxy after editing.
 
 The store is `plugins/bsp_velocity_additions/last-servers.json`, one entry per player with the server name, the last known player name and a timestamp.
 

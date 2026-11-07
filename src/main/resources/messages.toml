@@ -12,7 +12,9 @@ leave = "<yellow><player> left the game"
 # <online> players on the network, <ping> the viewer's own ping in ms, <newline> for a second line.
 header = "Build | Secure | Protect<newline><gray>minecraft.buildsecureprotect.com"
 footer = "<gray><online> online · ping <white><ping> ms"
-# Each name. <prefix> is the LuckPerms prefix (empty without LuckPerms-Velocity), <staff> the mark below for staff.
+# A name, used only where the player's own server gives none (with BSP-RankUp's prefix display on, RankUp's name shows
+# instead, images and suffixes included). <prefix> is the LuckPerms prefix (empty without LuckPerms-Velocity), <staff>
+# the mark below for staff. /players always uses this line.
 entry = "<prefix><staff><player>"
 staffMark = ""
 

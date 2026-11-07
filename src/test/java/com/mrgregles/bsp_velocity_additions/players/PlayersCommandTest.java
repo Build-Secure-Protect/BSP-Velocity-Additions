@@ -38,7 +38,7 @@ class PlayersCommandTest {
     @BeforeEach
     void setUp() {
         when(proxy.getAllPlayers()).thenReturn(List.of(steve, alex, bram));
-        PluginConfig.TabList tab = new PluginConfig.TabList(true, 3, "bspva.tab.staff");
+        PluginConfig.TabList tab = new PluginConfig.TabList(true, 3, "bspva.tab.staff", 30);
         PluginConfig.Players cfg = new PluginConfig.Players(true, "bspva.players.servers");
         command = new PlayersCommand(proxy, cfg, Messages.defaults(), new NameFormatter(tab, Messages.defaults(), PrefixProvider.NONE));
     }
@@ -87,7 +87,7 @@ class PlayersCommandTest {
     void staffServerTakesTheServerTag(@org.junit.jupiter.api.io.TempDir java.nio.file.Path dir) throws Exception {
         java.nio.file.Files.writeString(dir.resolve(Messages.FILE_NAME), "[players]\nstaffServer = \"<server_tag> (<count>): <names>\"\n");
         Messages owner = Messages.load(dir, mock(org.slf4j.Logger.class));
-        PluginConfig.TabList tab = new PluginConfig.TabList(true, 3, "bspva.tab.staff");
+        PluginConfig.TabList tab = new PluginConfig.TabList(true, 3, "bspva.tab.staff", 30);
         command = new PlayersCommand(proxy, new PluginConfig.Players(true, "bspva.players.servers"), owner,
                 new NameFormatter(tab, owner, PrefixProvider.NONE));
         when(steve.hasPermission("bspva.players.servers")).thenReturn(true);
