@@ -36,22 +36,22 @@ public record RelayPayload(int version, String kind, UUID sender, String name, S
     }
 
     /** A cursor over the bytes with Minecraft's encodings. Throws on anything short or oversized. */
-    static final class Reader {
+    public static final class Reader {
         private final byte[] bytes;
         private int pos;
 
-        Reader(byte[] bytes) {
+        public Reader(byte[] bytes) {
             this.bytes = bytes;
         }
 
-        int readByte() {
+        public int readByte() {
             if (pos >= bytes.length) {
                 throw new IllegalStateException("short");
             }
             return bytes[pos++] & 0xFF;
         }
 
-        long readLong() {
+        public long readLong() {
             long v = 0;
             for (int i = 0; i < 8; i++) {
                 v = (v << 8) | readByte();
@@ -59,7 +59,7 @@ public record RelayPayload(int version, String kind, UUID sender, String name, S
             return v;
         }
 
-        int readVarInt() {
+        public int readVarInt() {
             int value = 0;
             int shift = 0;
             while (true) {
@@ -75,7 +75,7 @@ public record RelayPayload(int version, String kind, UUID sender, String name, S
             }
         }
 
-        String readUtf(int maxChars) {
+        public String readUtf(int maxChars) {
             int length = readVarInt();
             if (length < 0 || length > maxChars * 3 || pos + length > bytes.length) {
                 throw new IllegalStateException("bad string length " + length);

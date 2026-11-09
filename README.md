@@ -13,6 +13,8 @@ Features, in order of work:
 
 6. **Separate JourneyMap maps per server** (built, untested with a real client): the proxy gives each server its own JourneyMap world id, on join and after every switch, so maps from different servers never mix. `[journeyMap]` in `config.toml`.
 
+7. **Network kicks** (built, for BSP-Server Utilities): a game server can ask the proxy to disconnect a player from the whole network, so a kicked player is never moved to another server. `[networkKick]` in `config.toml`; contract in `docs/API.md`.
+
 Companion to the BSP Forge mods on the backends: BSP-Core, BSP-Region Guard, BSP-Teleport, BSP-RankUp and BSP-InventorySync. Anything this plugin needs from them is optional on their side, so a server without a proxy loses nothing.
 
 ## Requirements

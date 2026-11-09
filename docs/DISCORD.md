@@ -23,7 +23,7 @@ The game servers never hold the bot's token or anyone's Discord id. Players neve
 1. Open <https://discord.com/developers/applications> and click **New Application**. Name it, for example, **BSP Herald**. This name and icon are what players see in their DMs.
 2. Open **Bot** in the left menu.
 3. Under **Privileged Gateway Intents**, leave all three switches **off** (Presence, Server Members, Message Content). The bot reads no messages and needs none of them.
-4. Turn **Public Bot** off, so only you can add it to a server.
+4. Turn **Public Bot** off, so only you can add it to a server. Discord refuses this ("Private application cannot have a default authorization link") while the app has an install link: first open **Installation** on the left, set **Install Link** to **None**, save, then come back to **Bot**. The bot is added with the link from the URL Generator below instead.
 5. Click **Reset Token**, then **Copy**. This is the bot's password. Do not paste it into Discord, a config file, a screenshot or a chat with anyone, including Claude. If it ever leaks, come back here and click **Reset Token** again; the old one stops working at once.
 
 ## 2. Put the token and the Redis password on the proxy machine
@@ -44,7 +44,7 @@ Neither is ever written to a file by the plugin or printed in the log.
    - Untick **Users Can View** and **Users Can Edit**, so the value is visible to admins only.
    - Rules: `nullable|string`.
 2. Do the same for `BSP_REDIS_PASSWORD`.
-3. Open the proxy server → **Startup**, paste each value into its box, and restart the server.
+3. Go to **Admin → Servers →** the proxy **→ Startup** (the admin view, not the server's own Startup page: with **Users Can View** unticked the boxes are hidden there), paste each value into its box under **Service Variables**, save, and restart the server. If your Redis has no password, leave that box empty.
 
 **On a plain Linux service** (systemd): run `sudo systemctl edit velocity` and add
 

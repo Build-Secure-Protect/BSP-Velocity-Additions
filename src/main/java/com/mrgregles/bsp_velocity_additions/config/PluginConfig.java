@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
  * bundled template, so the comments in the file are the documentation. Missing keys take their defaults.
  */
 public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList tabList, Players players, Chat chat,
-                           Discord discord, JourneyMap journeyMap) {
+                           Discord discord, JourneyMap journeyMap, NetworkKick networkKick) {
 
     public static final String FILE_NAME = "config.toml";
 
@@ -107,9 +107,15 @@ public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList t
         public static final JourneyMap DEFAULTS = new JourneyMap(true, false, false, 1500, Map.of());
     }
 
+    /** Network kicks asked by a backend (BSP-Server Utilities request SU-VA2, decision D36). */
+    public record NetworkKick(boolean enabled) {
+
+        public static final NetworkKick DEFAULTS = new NetworkKick(true);
+    }
+
     public static PluginConfig defaults() {
         return new PluginConfig(LastServer.DEFAULTS, JoinLeave.DEFAULTS, TabList.DEFAULTS, Players.DEFAULTS, Chat.DEFAULTS,
-                Discord.DEFAULTS, JourneyMap.DEFAULTS);
+                Discord.DEFAULTS, JourneyMap.DEFAULTS, NetworkKick.DEFAULTS);
     }
 
     /** Creates the file from the template when it is missing, then reads it. A broken file falls back to the defaults. */
@@ -136,7 +142,16 @@ public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList t
     static PluginConfig parse(Toml toml) {
         return new PluginConfig(parseLastServer(toml.getTable("lastServer")), parseJoinLeave(toml.getTable("joinLeave")),
                 parseTabList(toml.getTable("tabList")), parsePlayers(toml.getTable("players")), parseChat(toml.getTable("chat")),
-                parseDiscord(toml.getTable("discord")), parseJourneyMap(toml.getTable("journeyMap")));
+                parseDiscord(toml.getTable("discord")), parseJourneyMap(toml.getTable("journeyMap")),
+                parseNetworkKick(toml.getTable("networkKick")));
+    }
+
+    private static NetworkKick parseNetworkKick(Toml section) {
+        NetworkKick d = NetworkKick.DEFAULTS;
+        if (section == null) {
+            return d;
+        }
+        return new NetworkKick(section.getBoolean("enabled", d.enabled()));
     }
 
     private static JourneyMap parseJourneyMap(Toml section) {

@@ -188,3 +188,12 @@ Option A of `tools/preview/rankup_tab_names_mockups.html`: a name a backend give
 - [ ] Switch servers a few times: the names stay right after each switch, and nobody is listed twice.
 - [ ] Turn RankUp's prefix display off in its OPTIONS: within a few seconds every row shows the proxy's text form (`[Miner] Alex`) instead. Turn it on again: RankUp's look comes back.
 - [ ] `/players` still lists names with text prefixes.
+
+## 2026-11-08: network kicks (BSP-Server Utilities request SU-VA2)
+
+`kick/NetworkKickFeature` listens on `bsp_server_utilities:proxy` (registered at start), accepts only messages from a backend connection, never forwards them, and on version 1 kind `kick` disconnects the player from the proxy with the reason from the Component JSON. Tests: `NetworkKickFeatureTest` (9: switched off, nothing kicked and nothing reaches the client; a backend's kick disconnects with the reason and logs one line; the same bytes from a client are ignored and swallowed; unknown version or kind ignored; garbage and truncated bytes ignored; a player already gone is no error; unreadable reason JSON kicks with vanilla's reason; other channels left alone; the channel name) and `PluginConfigTest.readsTheNetworkKickSwitch`; 182 in all. `tools/check_proxy_api.sh` passes against the network's `velocity.jar`. Loaded on the local Velocity: `Network kicks: on, listening on bsp_server_utilities:proxy`. **Untested with Server Utilities and a real player.**
+
+- [ ] Restart the proxy with the new jar: `Network kicks: on, listening on bsp_server_utilities:proxy (BSP-Server Utilities)`.
+- [ ] Kick a test player from Server Utilities' staff web panel: they are disconnected with the panel's reason and land on the multiplayer screen, not on another server. The proxy console shows `[<server>] kicked <name>: <reason>`.
+- [ ] The same for Server Utilities' AFK kick and a failed presence check.
+- [ ] Set `[networkKick] enabled = false`, restart: the start line says it is off and the channel is dropped; a kick from the panel still removes the player after about 3 s (Server Utilities' own fallback), possibly moving them to another server. Set it back to `true`.

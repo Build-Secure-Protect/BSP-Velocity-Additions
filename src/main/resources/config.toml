@@ -67,6 +67,14 @@ redisChannel = "bsp_core:discord"
 # How many wrong codes one Discord user may type into /link in ten minutes before /link waits. 0 means no limit.
 wrongCodesPerTenMinutes = 5
 
+[networkKick]
+# Kicks a game server asks for (BSP-Server Utilities: the staff web panel, the AFK kick, a failed presence check).
+# The server sends the request on bsp_server_utilities:proxy over the player's own connection; the proxy disconnects
+# the player from the whole network with the server's reason, so Velocity never moves them to another server instead.
+# Only game servers are listened to, never a player's client. Off: the request is dropped unread (never passed on to
+# the player) and Server Utilities kicks the player itself after 3 s.
+enabled = true
+
 [journeyMap]
 # JourneyMap world ids. Behind the proxy every server has the same address, so the JourneyMap client can tell the
 # servers apart only by a world id. With this on, the proxy is the only source of it: it answers the client's

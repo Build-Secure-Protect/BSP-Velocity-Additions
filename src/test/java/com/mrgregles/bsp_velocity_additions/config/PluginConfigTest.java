@@ -35,6 +35,14 @@ class PluginConfigTest {
         assertEquals(0, PluginConfig.load(dir, mock(Logger.class)).tabList().rankRefreshSeconds());
     }
 
+    /** SU-VA2: network kicks are on by default and can be switched off. */
+    @Test
+    void readsTheNetworkKickSwitch(@TempDir Path dir) throws Exception {
+        assertTrue(PluginConfig.load(dir.resolve("defaults"), mock(Logger.class)).networkKick().enabled());
+        Files.writeString(dir.resolve(PluginConfig.FILE_NAME), "[networkKick]\nenabled = false\n");
+        assertFalse(PluginConfig.load(dir, mock(Logger.class)).networkKick().enabled());
+    }
+
     @Test
     void readsTheJoinLeaveSection(@TempDir Path dir) throws Exception {
         Files.writeString(dir.resolve(PluginConfig.FILE_NAME), """

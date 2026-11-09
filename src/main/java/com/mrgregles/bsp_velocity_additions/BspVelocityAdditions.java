@@ -5,6 +5,7 @@ import com.mrgregles.bsp_velocity_additions.config.Messages;
 import com.mrgregles.bsp_velocity_additions.config.PluginConfig;
 import com.mrgregles.bsp_velocity_additions.chat.ChatRelayFeature;
 import com.mrgregles.bsp_velocity_additions.discord.DiscordFeature;
+import com.mrgregles.bsp_velocity_additions.kick.NetworkKickFeature;
 import com.mrgregles.bsp_velocity_additions.journeymap.WorldIdFeature;
 import com.mrgregles.bsp_velocity_additions.journeymap.WorldIds;
 import com.mrgregles.bsp_velocity_additions.joinleave.JoinLeaveFeature;
@@ -118,6 +119,15 @@ public final class BspVelocityAdditions {
                 logger.info("/players: on, server breakdown for {}", config.players().hasServersPermission()
                         ? config.players().serversPermission() : "the console only");
             }
+        }
+        // Registered either way, so the channel never passes through to clients (see NetworkKickFeature)
+        proxy.getChannelRegistrar().register(NetworkKickFeature.IDENTIFIER);
+        proxy.getEventManager().register(this, new NetworkKickFeature(proxy, config.networkKick().enabled(), logger));
+        if (config.networkKick().enabled()) {
+            logger.info("Network kicks: on, listening on {} (BSP-Server Utilities)", NetworkKickFeature.CHANNEL);
+        } else {
+            logger.info("networkKick.enabled is false; {} is dropped and BSP-Server Utilities kicks players itself",
+                    NetworkKickFeature.CHANNEL);
         }
         if (config.journeyMap().enabled()) {
             startJourneyMap(config.journeyMap());
