@@ -35,6 +35,12 @@ relayStaff = "<server_tag> <line>"
 # Hovering a <server_tag>. <server> the server's name.
 serverTagHover = "<white><server>"
 
+[chatHistory]
+# Around the recent chat a player gets when joining the network; each line in between uses chat.relay (or relayStaff).
+# Leave one empty to send no line there.
+header = "<gray>─── Earlier chat ───"
+footer = "<gray>─── Now ───"
+
 [discord]
 # The BSP Discord bot (Herald). Discord markdown, not MiniMessage: **bold**, *italic*. Every name and server put in
 # is escaped, so it shows exactly as written and can never mention anyone.

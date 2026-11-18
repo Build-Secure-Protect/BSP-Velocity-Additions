@@ -47,6 +47,16 @@ useBackendFormatting = true
 # Also print relayed lines to the proxy console.
 logToConsole = true
 
+[chatHistory]
+# A player joining the network gets the recent public chat from every server, shown as live relayed chat is, between
+# chatHistory.header and chatHistory.footer in messages.toml. Nothing on a server switch (the client keeps its chat),
+# nothing when there is no recent chat. Kept in memory only: a proxy restart empties it. Needs [chat] on.
+enabled = true
+# At most this many lines (1 to 500).
+lines = 50
+# None older than this, in minutes (1 to 1440).
+maxAgeMinutes = 30
+
 [discord]
 # The BSP Discord bot: Herald steal warnings by direct message, the public "A totem is being stolen on <server>" line,
 # and /link, /unlink and /linkstatus in the BSP Discord. Off by default; the setup guide is docs/DISCORD.md.

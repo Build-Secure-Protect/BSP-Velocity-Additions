@@ -55,7 +55,7 @@ class ChatRelayFeatureTest {
 
     private ChatRelayFeature feature(boolean backendFormatting) {
         return new ChatRelayFeature(proxy, new PluginConfig.Chat(true, backendFormatting, true),
-                new PluginConfig.Players(true, "bspva.players.servers"), Messages.defaults(), logger);
+                new PluginConfig.Players(true, "bspva.players.servers"), Messages.defaults(), ChatHistory.off(), logger);
     }
 
     private static Player player(String name, String server) {
@@ -173,7 +173,7 @@ class ChatRelayFeatureTest {
     void theOwnerCanGiveEveryoneTheTagAndTheConsoleStaysText(@TempDir Path dir) throws Exception {
         Files.writeString(dir.resolve(Messages.FILE_NAME), "[chat]\nrelay = \"<server_tag> <line>\"\n");
         feature = new ChatRelayFeature(proxy, new PluginConfig.Chat(true, true, true),
-                new PluginConfig.Players(true, "bspva.players.servers"), Messages.load(dir, logger), logger);
+                new PluginConfig.Players(true, "bspva.players.servers"), Messages.load(dir, logger), ChatHistory.off(), logger);
 
         feature.onPluginMessage(fromBackend("BSP-Wild", RelayPayloadTest.chat(steve.getUniqueId(), "Steve", "hi all", JSON, "BSP-Wild")));
 

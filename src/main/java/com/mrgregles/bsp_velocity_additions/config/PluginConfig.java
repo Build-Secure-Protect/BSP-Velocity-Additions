@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
  * bundled template, so the comments in the file are the documentation. Missing keys take their defaults.
  */
 public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList tabList, Players players, Chat chat,
-                           Discord discord, JourneyMap journeyMap, NetworkKick networkKick) {
+                           Discord discord, JourneyMap journeyMap, NetworkKick networkKick, ChatHistory chatHistory) {
 
     public static final String FILE_NAME = "config.toml";
 
@@ -113,9 +113,18 @@ public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList t
         public static final NetworkKick DEFAULTS = new NetworkKick(true);
     }
 
+    /**
+     * The recent network chat sent to a player joining the network (T25, decision D37): at most {@code lines} lines
+     * (1 to 500), none older than {@code maxAgeMinutes} (1 to 1440). Needs shared chat on.
+     */
+    public record ChatHistory(boolean enabled, int lines, int maxAgeMinutes) {
+
+        public static final ChatHistory DEFAULTS = new ChatHistory(true, 50, 30);
+    }
+
     public static PluginConfig defaults() {
         return new PluginConfig(LastServer.DEFAULTS, JoinLeave.DEFAULTS, TabList.DEFAULTS, Players.DEFAULTS, Chat.DEFAULTS,
-                Discord.DEFAULTS, JourneyMap.DEFAULTS, NetworkKick.DEFAULTS);
+                Discord.DEFAULTS, JourneyMap.DEFAULTS, NetworkKick.DEFAULTS, ChatHistory.DEFAULTS);
     }
 
     /** Creates the file from the template when it is missing, then reads it. A broken file falls back to the defaults. */
@@ -143,7 +152,18 @@ public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList t
         return new PluginConfig(parseLastServer(toml.getTable("lastServer")), parseJoinLeave(toml.getTable("joinLeave")),
                 parseTabList(toml.getTable("tabList")), parsePlayers(toml.getTable("players")), parseChat(toml.getTable("chat")),
                 parseDiscord(toml.getTable("discord")), parseJourneyMap(toml.getTable("journeyMap")),
-                parseNetworkKick(toml.getTable("networkKick")));
+                parseNetworkKick(toml.getTable("networkKick")), parseChatHistory(toml.getTable("chatHistory")));
+    }
+
+    private static ChatHistory parseChatHistory(Toml section) {
+        ChatHistory d = ChatHistory.DEFAULTS;
+        if (section == null) {
+            return d;
+        }
+        return new ChatHistory(
+                section.getBoolean("enabled", d.enabled()),
+                (int) Math.min(500L, Math.max(1L, section.getLong("lines", (long) d.lines()))),
+                (int) Math.min(1440L, Math.max(1L, section.getLong("maxAgeMinutes", (long) d.maxAgeMinutes()))));
     }
 
     private static NetworkKick parseNetworkKick(Toml section) {

@@ -1,0 +1,107 @@
+<title>Chat History on Join</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: brief, three chat-box cards (stacked on a phone), each Alex joining the network with its messages.toml lines, then questions. Dark only: a game HUD. */
+:root {
+  --bg: #0b0e13; --panel: #10151c; --inset: #0c0e12; --line: #2a2f3a;
+  --text: #e6eaf2; --muted: #9aa3b5; --hint: #6f7788;
+  --teal: #19d3b0; --violet: #b58cff; --gold: #ffd23a; --bad: #ff6b5c;
+  --mc-yellow: #ffff55; --mc-gray: #aaaaaa; --mc-white: #ffffff; --mc-aqua: #55ffff; --mc-gold: #ffaa00; --mc-dgray: #555555;
+  --mc: 'VT323', 'Courier New', monospace; --ui: 'IBM Plex Sans', system-ui, sans-serif;
+  color-scheme: dark;
+}
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--ui); font-size: 15px; line-height: 1.5;
+  padding-block: 28px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+main { max-width: 1180px; margin: 0 auto; display: grid; gap: 22px; }
+h1 { font-family: var(--mc); font-weight: 400; font-size: 34px; letter-spacing: .5px; margin: 0; color: var(--teal); text-wrap: balance; }
+h1 small { color: var(--muted); font-size: 22px; margin-left: 10px; }
+p { margin: 0; max-width: 72ch; color: var(--muted); }
+.warn { border-left: 3px solid var(--gold); padding: 8px 12px; background: rgba(255,210,58,.08); color: var(--text); max-width: 80ch; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
+.card { background: var(--panel); border: 1px solid var(--teal); border-radius: 4px; padding: 14px 14px 16px; display: grid; gap: 12px; min-width: 0; align-content: start; }
+.card header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.card h2 { font-family: var(--mc); font-weight: 400; font-size: 26px; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+.tag { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border: 1px solid; border-radius: 3px; white-space: nowrap; }
+.tag.a { color: var(--gold); border-color: var(--gold); background: rgba(255,210,58,.12); }
+.tag.b { color: var(--teal); border-color: var(--teal); background: rgba(25,211,176,.12); }
+.tag.c { color: var(--bad); border-color: var(--bad); background: rgba(255,107,92,.12); }
+.chat { background: var(--inset); border: 1px solid var(--line); padding: 10px 8px 8px; display: grid; gap: 2px; font-family: var(--mc); font-size: 24px; line-height: 1.05; overflow-x: auto; }
+.chat .cap { font: 12px/1.4 var(--ui); color: var(--hint); padding: 4px 0 2px; letter-spacing: .04em; text-transform: uppercase; }
+.chat .l { background: rgba(0,0,0,.5); padding: 2px 6px; white-space: nowrap; color: var(--mc-white); text-shadow: 2px 2px 0 #3f3f3f; }
+.chat .l .g { color: var(--mc-gray); text-shadow: 2px 2px 0 #2a2a2a; }
+.chat .l .dg { color: var(--mc-dgray); text-shadow: 2px 2px 0 #151515; }
+.chat .l .aq { color: var(--mc-aqua); text-shadow: 2px 2px 0 #153f3f; }
+.chat .l .gold { color: var(--mc-gold); text-shadow: 2px 2px 0 #3f2a00; }
+.chat .l .y { color: var(--mc-yellow); text-shadow: 2px 2px 0 #3f3f15; }
+.note { font-size: 13px; color: var(--hint); }
+.note b { color: var(--muted); font-weight: 600; }
+pre { margin: 0; background: var(--inset); border: 1px solid var(--line); padding: 10px 12px; font: 12.5px/1.5 'SFMono-Regular', Menlo, Consolas, monospace; color: var(--text); overflow-x: auto; }
+pre .k { color: var(--teal); } pre .s { color: var(--gold); } pre .c { color: var(--hint); }
+ul { margin: 0; padding-left: 18px; color: var(--muted); }
+li { margin: 2px 0; }
+.foot { display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 14px; }
+code { font-size: .92em; }
+.chat .l.old { opacity: 1; }
+.chat .l .dg { color: var(--mc-dgray); text-shadow: 2px 2px 0 #151515; }
+.chat .l .old { color: var(--mc-dgray); text-shadow: 2px 2px 0 #151515; }
+.chat .l .y { color: var(--mc-yellow); text-shadow: 2px 2px 0 #3f3f15; }
+.chat .l .ts { color: var(--mc-dgray); text-shadow: 2px 2px 0 #151515; }
+.img { display: inline-block; height: 16px; width: 28px; vertical-align: -2px; border: 1px solid rgba(0,0,0,.6); background: repeating-linear-gradient(90deg, #7a7f88 0 4px, #a6acb6 4px 8px); }
+.img.w { width: 32px; background: repeating-linear-gradient(90deg, #8f3fd1 0 4px, #c27bff 4px 8px); }
+.split { height: 0; border-top: 1px dashed var(--line); margin: 4px 0; }
+h3 { font-family: var(--mc); font-weight: 400; font-size: 24px; margin: 0; letter-spacing: .5px; }
+</style>
+<main>
+  <div>
+    <h1>Chat history on join <small>BSP-Velocity Additions, T25</small></h1>
+    <p>When a player joins the network, the proxy sends them the recent public chat from every server: the last 50 lines, none older than 30 minutes. Each card shows Alex logging in on BSP-Spawn after a quiet quarter hour. History lines show exactly as live relayed chat did (same prefixes, RankUp images as coloured bars here); no line names a server for normal players (D18), and staff see the server tag on history lines as on live ones. Team chat and blocked chat are never kept. <b style="color:var(--gold)">Decided 2026-11-18: look A</b> (D37), built.</p>
+  </div>
+  <section class="cards">
+    <article class="card">
+      <header><h2>A · Markers</h2><span class="tag a">chosen · built</span></header>
+      <div class="chat">
+        <div class="cap">Alex joins the network on BSP-Spawn</div>
+        <div class="l"><span class="g">─── Earlier chat ───</span></div><div class="l">&lt;<span class="img"></span> Steve&gt; anyone selling plasma?</div><div class="l">&lt;<span class="img w"></span> Nadia&gt; 40 each at my shop</div><div class="l">&lt;<span class="img"></span> Steve&gt; omw</div><div class="l">&lt;Dani&gt; server restart in 10, finish your builds</div><div class="l"><span class="g">─── Now ───</span></div><div class="l"><span class="y">Alex joined the game</span></div><div class="cap">then live chat</div><div class="l">&lt;<span class="img w"></span> Nadia&gt; welcome back Alex</div>
+      </div>
+      <p class="note"><b>History looks like chat, framed by two grey lines.</b> Easy to tell where old ends and new begins; the lines keep their colours and images, so rank prefixes read as usual.</p>
+<pre><span class="k">[chatHistory]</span>
+<span class="k">header</span> = <span class="s">"&lt;gray&gt;─── Earlier chat ───"</span>
+<span class="c"># each line: chat.relay (staff: chat.relayStaff)</span>
+<span class="k">footer</span> = <span class="s">"&lt;gray&gt;─── Now ───"</span></pre>
+    </article>
+    <article class="card">
+      <header><h2>B · Dimmed</h2><span class="tag b">not chosen</span></header>
+      <div class="chat">
+        <div class="cap">Alex joins the network on BSP-Spawn</div>
+        <div class="l"><span class="dg">Earlier chat:</span></div><div class="l"><span class="old">&lt;Steve&gt; anyone selling plasma?</span></div><div class="l"><span class="old">&lt;Nadia&gt; 40 each at my shop</span></div><div class="l"><span class="old">&lt;Steve&gt; omw</span></div><div class="l"><span class="old">&lt;Dani&gt; server restart in 10, finish your builds</span></div><div class="l"><span class="y">Alex joined the game</span></div><div class="cap">then live chat</div><div class="l">&lt;<span class="img w"></span> Nadia&gt; welcome back Alex</div>
+      </div>
+      <p class="note"><b>Old lines in dark grey, as plain text.</b> Impossible to mistake for live chat, but colours and RankUp's images are lost (an image would be tinted grey), so the line is rebuilt from the name and text.</p>
+<pre><span class="k">[chatHistory]</span>
+<span class="k">header</span> = <span class="s">"&lt;dark_gray&gt;Earlier chat:"</span>
+<span class="k">line</span>   = <span class="s">"&lt;dark_gray&gt;&lt;&lt;player&gt;&gt; &lt;text&gt;"</span>
+<span class="k">footer</span> = <span class="s">""</span></pre>
+    </article>
+    <article class="card">
+      <header><h2>C · Times</h2><span class="tag c">not chosen</span></header>
+      <div class="chat">
+        <div class="cap">Alex joins the network on BSP-Spawn</div>
+        <div class="l"><span class="ts">14m</span> &lt;<span class="img"></span> Steve&gt; anyone selling plasma?</div><div class="l"><span class="ts">13m</span> &lt;<span class="img w"></span> Nadia&gt; 40 each at my shop</div><div class="l"><span class="ts">12m</span> &lt;<span class="img"></span> Steve&gt; omw</div><div class="l"><span class="ts">4m</span> &lt;Dani&gt; server restart in 10, finish your builds</div><div class="l"><span class="g">─── Now ───</span></div><div class="l"><span class="y">Alex joined the game</span></div><div class="cap">then live chat</div><div class="l">&lt;<span class="img w"></span> Nadia&gt; welcome back Alex</div>
+      </div>
+      <p class="note"><b>Each old line says how long ago it was said</b> (minutes, rounded). Most informative; the extra column makes long lines wrap sooner. One marker line after.</p>
+<pre><span class="k">[chatHistory]</span>
+<span class="k">header</span> = <span class="s">""</span>
+<span class="k">line</span>   = <span class="s">"&lt;dark_gray&gt;&lt;ago&gt;&lt;/dark_gray&gt; &lt;line&gt;"</span>
+<span class="k">footer</span> = <span class="s">"&lt;gray&gt;─── Now ───"</span></pre>
+    </article>
+  </section>
+  <div class="foot">
+    <h3>Questions, each with a default</h3>
+    <ul>
+      <li><b>Which look?</b> Default: A.</li>
+      <li><b>With nothing to show</b> (no chat in the last 30 minutes): default, send nothing at all, not even the marker lines.</li>
+      <li><b>Order on join:</b> default, the history first, then the "joined the game" line, then live chat, as in each card.</li>
+    </ul>
+    <p class="note">Settled already: last 50 lines, at most 30 minutes old, on a network join only, kept in memory (lost on a proxy restart), <code>[chatHistory]</code> in <code>config.toml</code> to switch it off. Replayed lines are server messages, so Minecraft's report button does not work on them.</p>
+  </div>
+</main>

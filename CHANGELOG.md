@@ -4,6 +4,8 @@ All notable changes to BSP-Velocity Additions. The format follows [Keep a Change
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-18
+
 ### Changed
 - **The tab list keeps BSP-RankUp's names** (BSP-RankUp request RU-R3): a name a game server gives a player (RankUp's prefix image and suffix) is no longer replaced by the proxy's text prefix, and a player on another server shows with the name their own server gives them, so rank images and suffixes show for everyone on the network. Where a server gives no name (RankUp's prefix display off, or no RankUp), `tabList.entry` fills in as before. `/players` is unchanged. Untested on the live proxy.
 
@@ -13,6 +15,8 @@ All notable changes to BSP-Velocity Additions. The format follows [Keep a Change
 - The proxy console showed `chat.type.text` for every relayed chat line (bug B4); it now shows `<Name> message`. Players were never affected.
 
 ### Added
+- **Chat history on joining the network** (task T25): a player joining the network gets the recent public chat from every server (the last 50 lines, none older than 30 minutes), between `─── Earlier chat ───` and `─── Now ───`, before the "joined the game" line. Old lines look exactly like live relayed chat (staff see the server tag). Nothing on a server switch, nothing when there is no recent chat. Kept in memory only; team and blocked chat never kept. `[chatHistory]` in `config.toml` (on), `chatHistory.header` and `footer` in `messages.toml`; files without them use the defaults. Replayed lines are server messages, so Minecraft's report button does not work on them. Untested on the live proxy.
+- **Network kicks (BSP-Server Utilities request SU-VA2):** a game server can ask the proxy, on `bsp_server_utilities:proxy` over the player's own connection, to disconnect a player from the whole network with its reason, so Velocity never moves a kicked player to another server instead. Only game servers are listened to, never a client; unknown versions and kinds are ignored; nothing on the channel is ever passed on to a client, even with the kick switched off. One console line per kick: `[BSP-Spawn] kicked Steve: <reason>`. `[networkKick] enabled` in `config.toml` (on). Contract in `docs/API.md`. Untested on the live proxy and with Server Utilities.
 - **`<server_tag>`, server images in chat (BSP-Server Utilities request SU-VA1):** a new placeholder beside `<server>` in `chat.relay`, `chat.relayStaff` and `players.staffServer`. It is the server's image from BSP-Server Utilities (key `bsp_server_utilities.server_image.<name in lower case>`, font `bsp_server_utilities:server_tags`, white so the image keeps its colours); a server with no image shows the grey `[BSP-Spawn]` text as before. Hovering it shows the new line `chat.serverTagHover` (default `<white><server>`). The bundled `chat.relayStaff` is now `<server_tag> <line>`. `<server>`, `chat.relay`, `players.staffServer`, the console line and Discord are unchanged. A `messages.toml` without a `relayStaff` line (any file written before shared chat existed) gets the new default straight away; one that has its own `relayStaff` line keeps it until you change it to `relayStaff = "<server_tag> <line>"`. `serverTagHover` comes from the bundled file until you add it. Untested with a real client.
 - `tabList.rankRefreshSeconds` in `config.toml` (see Fixed, B6).
 - `tools/check_proxy_api.sh`: checks, before a release, that the built jar calls no Velocity or Adventure method the network's proxy lacks.

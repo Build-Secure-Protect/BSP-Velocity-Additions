@@ -43,6 +43,17 @@ class PluginConfigTest {
         assertFalse(PluginConfig.load(dir, mock(Logger.class)).networkKick().enabled());
     }
 
+    /** T25: chat history defaults (on, 50 lines, 30 minutes) and its limits. */
+    @Test
+    void readsTheChatHistorySection(@TempDir Path dir) throws Exception {
+        assertEquals(PluginConfig.ChatHistory.DEFAULTS, PluginConfig.load(dir.resolve("defaults"), mock(Logger.class)).chatHistory());
+        Files.writeString(dir.resolve(PluginConfig.FILE_NAME), "[chatHistory]\nenabled = false\nlines = 9000\nmaxAgeMinutes = 0\n");
+        PluginConfig.ChatHistory h = PluginConfig.load(dir, mock(Logger.class)).chatHistory();
+        assertFalse(h.enabled());
+        assertEquals(500, h.lines());
+        assertEquals(1, h.maxAgeMinutes());
+    }
+
     @Test
     void readsTheJoinLeaveSection(@TempDir Path dir) throws Exception {
         Files.writeString(dir.resolve(PluginConfig.FILE_NAME), """

@@ -3,6 +3,7 @@ package com.mrgregles.bsp_velocity_additions;
 import com.google.inject.Inject;
 import com.mrgregles.bsp_velocity_additions.config.Messages;
 import com.mrgregles.bsp_velocity_additions.config.PluginConfig;
+import com.mrgregles.bsp_velocity_additions.chat.ChatHistory;
 import com.mrgregles.bsp_velocity_additions.chat.ChatRelayFeature;
 import com.mrgregles.bsp_velocity_additions.discord.DiscordFeature;
 import com.mrgregles.bsp_velocity_additions.kick.NetworkKickFeature;
@@ -33,6 +34,7 @@ import com.velocitypowered.api.proxy.server.RegisteredServer;
 import org.slf4j.Logger;
 
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -89,9 +91,16 @@ public final class BspVelocityAdditions {
         }
         if (config.chat().enabled()) {
             proxy.getChannelRegistrar().register(ChatRelayFeature.IDENTIFIER);
-            proxy.getEventManager().register(this, new ChatRelayFeature(proxy, config.chat(), config.players(), messages, logger));
+            ChatHistory history = ChatHistory.of(config.chatHistory(), Clock.systemUTC());
+            proxy.getEventManager().register(this, new ChatRelayFeature(proxy, config.chat(), config.players(), messages, history, logger));
             logger.info("Shared chat: on, listening on {} (needs proxy.relayChat = true in BSP-Core on every backend)",
                     ChatRelayFeature.CHANNEL);
+            if (config.chatHistory().enabled()) {
+                logger.info("Chat history: on, the last {} line(s) of the last {} min for players joining the network",
+                        config.chatHistory().lines(), config.chatHistory().maxAgeMinutes());
+            } else {
+                logger.info("chatHistory.enabled is false; joining players see no earlier chat");
+            }
         } else {
             logger.info("chat.enabled is false; no shared chat");
         }

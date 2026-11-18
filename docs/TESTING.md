@@ -197,3 +197,21 @@ Option A of `tools/preview/rankup_tab_names_mockups.html`: a name a backend give
 - [ ] Kick a test player from Server Utilities' staff web panel: they are disconnected with the panel's reason and land on the multiplayer screen, not on another server. The proxy console shows `[<server>] kicked <name>: <reason>`.
 - [ ] The same for Server Utilities' AFK kick and a failed presence check.
 - [ ] Set `[networkKick] enabled = false`, restart: the start line says it is off and the channel is dropped; a kick from the panel still removes the player after about 3 s (Server Utilities' own fallback), possibly moving them to another server. Set it back to `true`.
+
+## 2026-11-18: chat history on joining the network (task T25)
+
+Look A of `tools/preview/chat_history_mockups.html` (D37). `chat/ChatHistory` keeps every relayed line (in memory, at most `lines`, none older than `maxAgeMinutes`); `ChatRelayFeature.onServerPostConnect` (order EARLY, before the join line at NORMAL) sends a player with no previous server the recent lines, each rendered with `chat.relay` or `chat.relayStaff` for that viewer, between `chatHistory.header` and `footer`. Tests: `ChatHistoryTest` (8) and `PluginConfigTest.readsTheChatHistorySection`; 191 in all. `tools/check_proxy_api.sh` passes; loads on a local Velocity (`Chat history: on, the last 50 line(s) of the last 30 min ...`). **Untested on the live proxy.**
+
+- [ ] Restart the proxy with the new jar: `Chat history: on, the last 50 line(s) of the last 30 min for players joining the network`.
+- [ ] With BSP-Core's `relayChat` on, chat a few lines on two servers, then log in with a second account: it sees `─── Earlier chat ───`, those lines (with rank prefixes and RankUp images, no server names), `─── Now ───`, then the "joined the game" line.
+- [ ] Log in with a staff account (`players.serversPermission`): the old lines carry the server tag.
+- [ ] Switch servers: no history is sent again, and your chat window still has its lines. **If the chat window is empty after a switch, tell Claude**: the history should then be sent after switches too.
+- [ ] Wait 31 minutes with nobody chatting, log in: no history and no marker lines.
+- [ ] Team chat and chat blocked by Region Guard never appear in the history.
+- [ ] Restart the proxy: the history is empty (kept in memory only).
+
+## 2026-11-18: release 0.2.1
+
+`build/libs/bsp_velocity_additions-0.2.1.jar` holds everything since 0.2.0: B3, B4, B6, JourneyMap world ids, `<server_tag>` (SU-VA1), RankUp's tab names (RU-R3), network kicks (SU-VA2) and chat history (T25). 191 tests pass and `tools/check_proxy_api.sh` passes against the network's `velocity.jar`.
+- [ ] Remove the old `bsp_velocity_additions-0.2.0.jar` from the proxy's `plugins/` folder (two copies of the plugin will not both load), put in 0.2.1, restart the proxy: the log shows `Loaded plugin bsp_velocity_additions 0.2.1` and no errors.
+- [ ] Then work through the unticked checks in the sections above.
