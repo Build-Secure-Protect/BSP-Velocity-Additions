@@ -30,6 +30,13 @@ dependencies {
         exclude group: 'com.google.crypto.tink'
     }
 
+    // The Fourthwall store (BSP-Server Shop request SH-R1): the bsp_shop MariaDB database. Shaded and relocated under
+    // our package, like JDA's libraries; Velocity provides SLF4J. LuckPerms-Velocity carries its own isolated copies.
+    implementation("com.zaxxer:HikariCP:${hikaricp_version}") { transitive = false }
+    implementation("org.mariadb.jdbc:mariadb-java-client:${mariadb_driver_version}") { transitive = false }
+    // The store's database tests run against H2 in MariaDB mode (as BSP-Server Shop's do).
+    testImplementation "com.h2database:h2:${h2_version}"
+
     testImplementation "com.velocitypowered:velocity-api:${velocity_api_version}"
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -84,6 +91,8 @@ shadowJar {
     relocate 'org.apache.commons.collections4', "${shaded}.collections4"
     relocate 'org.jetbrains.annotations', "${shaded}.jetbrains.annotations"
     relocate 'org.intellij.lang.annotations', "${shaded}.intellij.annotations"
+    relocate 'com.zaxxer.hikari', "${shaded}.hikari"
+    relocate 'org.mariadb.jdbc', "${shaded}.mariadb"
     exclude 'META-INF/versions/*/module-info.class'
     exclude 'module-info.class'
     mergeServiceFiles()

@@ -215,3 +215,38 @@ Look A of `tools/preview/chat_history_mockups.html` (D37). `chat/ChatHistory` ke
 `build/libs/bsp_velocity_additions-0.2.1.jar` holds everything since 0.2.0: B3, B4, B6, JourneyMap world ids, `<server_tag>` (SU-VA1), RankUp's tab names (RU-R3), network kicks (SU-VA2) and chat history (T25). 191 tests pass and `tools/check_proxy_api.sh` passes against the network's `velocity.jar`.
 - [ ] Remove the old `bsp_velocity_additions-0.2.0.jar` from the proxy's `plugins/` folder (two copies of the plugin will not both load), put in 0.2.1, restart the proxy: the log shows `Loaded plugin bsp_velocity_additions 0.2.1` and no errors.
 - [ ] Then work through the unticked checks in the sections above.
+
+## 2026-11-19: the Fourthwall store (BSP-Server Shop request SH-R1, task T26)
+
+Built and unit-tested on 2026-11-19 (version 0.3.0). The tests ran against H2 in MariaDB mode, a local Mojang stand-in, a local Fourthwall API stand-in, and the receiver on a real port with real signatures; one signature was checked against `openssl`. A headless load on the local Velocity confirmed the plugin starts with the store off, writes both templates, and with the store on gives one clear line when the database cannot be reached.
+
+**Not yet tried:** the real MariaDB, the live proxy, Cloudflare, Fourthwall, and BSP-Server Shop delivering a row written by this plugin. Setup and tests are done with the owner, one step at a time; see `docs/STORE.md`.
+- [x] (2026-11-20) Setup: LuckPerms-Velocity loaded (`lpv info`), the four egg variables, the `127.0.0.1:8765` allocation, `store.toml` with `enabled = true` and `captureOnly = true`; after a restart the log shows "Store: connected to the database" and "webhook receiver listening".
+- [x] (2026-11-20; route is `http://172.18.0.1:8765`, see `docs/STORE.md`) Cloudflare: `curl -i -X POST https://store-hooks.buildsecureprotect.com/fourthwall/webhook` from the Mac gets the plugin's 401, not a Cloudflare page.
+- [x] (2026-11-20; questions 1, 2, 5, 6 settled, 3 and 4 wait for memberships, 7 does not arise) Capture: Fourthwall's test webhook and one test order are stored in `shop_events`; the seven open questions in `docs/STORE.md` are answered; `captureOnly = false`.
+- [x] (2026-11-20: unsigned → 401, nothing stored; Fourthwall has no resend button: a retry after a 500 (test 11) was stored once with one reward, and exact duplicates are covered by the unit tests) 1 Signature: unsigned gets 401 with nothing stored; a resend is stored once with no second row.
+- [x] (2026-11-20: order Q3ZUA32R, row 2568 delivered once by BSP-Stormfall 2.4 s after it was written, `storetest` on BSPAdmin while offline) 2 Rank order, player offline: ASSIGNED, one PENDING row, delivered once by one backend; `lp user <name> info` shows the group.
+- [x] (2026-11-20, through a staff grant of a `test-item` reward: one oak sapling arrived only after joining BSP-SafeRoom) 3 Item order: a `requireOnline` SKU for BSP-SafeRoom waits until the player has been on SafeRoom 15 to 20 s.
+- [x] (2026-11-20: 2 × VIP (`perQuantity = false`) in order 96Y5WQGK made one row; `perQuantity = true` is covered by the unit tests only) 4 Quantity: 2 of a `perQuantity = true` SKU makes two rows; `perQuantity = false` makes one row with `{quantity}` = 2.
+- [x] (2026-11-20: order 96Y5WQGK, name `no name`) 5 Blank or wrong username: AWAITING_PLAYER; a wrong claim fails without saying which part; the 6th failure in 10 min is refused; the right pair works once.
+- [x] (2026-11-20: BSPAdmin linked their email; order 1KQ6H2BG, with the name box empty, was assigned by itself) 6 Link: `/store link`, then a new order from that email with no username is assigned automatically.
+- [ ] (2026-11-20: **not possible live**: Fourthwall cannot cancel a delivered digital order, and digital orders are delivered at once. Covered by the unit tests; `/storeadmin revoke` (T27) is queued for refunds) 7 Cancellation: pending rows become CANCELLED and are never run; after delivery a rank gets a REVOKE row and an item warns staff.
+- [ ] 8 Membership: purchase grants; a tier change revokes the old tier and grants the new; EXPIRED revokes; replays change nothing.
+- [x] (2026-11-20: route blocked at the tunnel instead (Fourthwall can only delete a webhook); `storeadmin resync` picked up order C once, a second resync found nothing new, one reward row) 9 Resync: with the webhook off in Fourthwall, an order is picked up by `/storeadmin resync` once; a second resync adds nothing.
+- [x] (2026-11-20: lookup with masked emails (test 5), grant (test 3), reload (several times), unlink (then order QF1KPSXS waited), assign QF1KPSXS (once, then refused)) 10 Staff: lookup, assign, unlink, grant (a MANUAL row) and reload, emails masked everywhere.
+- [x] (2026-11-20, second try: locked `'bsp_shop'@'172.18.%'` and killed its connections; the webhook answered 500; after unlocking, Fourthwall's retry stored it and the order arrived) 11 Database locked for a minute (`ALTER USER … ACCOUNT LOCK`, then close the `bsp_shop` connections already open, because a lock does not end them): the webhook answers 500 within 2 s, and Fourthwall's retry succeeds once it is unlocked. The store says "not available" meanwhile and comes back by itself within 30 s (B7).
+- [ ] Afterwards: `processTestEvents = false`, `deliverTestRewards = false` on the two test backends, test rows, orders and events deleted, the `storetest` group deleted.
+
+
+**Audit, 2026-11-19:** bugs B7 to B15 were found in the new store code before any live test, and fixed. Tests are in `StoreAuditTest`; each failed against the old code first, except B15, a MariaDB-only race. The relocated connection pool and driver were also checked from the built jar. 269 tests pass.
+
+## 2026-11-20: `/storeadmin revoke` (T27) and quieter pool logs (B17)
+
+**Built and tested:**
+- **T27:** 4 tests in `StoreRevokeTest`.
+- **B17:** `PoolLogsTest`, run against the network's `velocity.jar`; it failed without the fix.
+
+**Not yet on the live proxy:**
+- [ ] Install the rebuilt jar and restart. The `Store` lines are as before, and the console no longer shows `[...shaded.hikari...] BSP Store - Starting...`.
+- [x] (2026-11-20 01:57: `storeadmin revoke 1KQ6H2BG` wrote 1 take-back, and `storetest` was gone from BSPAdmin within 25 s) `storeadmin revoke <one of the test orders>`: `Order … taken back: 0 waiting reward(s) cancelled, 1 take-back(s) written.` Within a minute `lpv user bspadmin info` no longer lists `storetest`. A second run writes nothing.
+- [ ] Optional, B17 live: lock `'bsp_shop'@'172.18.%'` and close its connections as in test 11, then send a webhook or run `/store status`. Only the plugin's own lines appear, with no Hikari stack trace. Unlock afterwards.

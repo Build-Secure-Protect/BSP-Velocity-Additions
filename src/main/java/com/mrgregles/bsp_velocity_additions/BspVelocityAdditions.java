@@ -11,6 +11,7 @@ import com.mrgregles.bsp_velocity_additions.journeymap.WorldIdFeature;
 import com.mrgregles.bsp_velocity_additions.journeymap.WorldIds;
 import com.mrgregles.bsp_velocity_additions.joinleave.JoinLeaveFeature;
 import com.mrgregles.bsp_velocity_additions.players.PlayersCommand;
+import com.mrgregles.bsp_velocity_additions.store.StoreFeature;
 import com.mrgregles.bsp_velocity_additions.tablist.LuckPermsPrefixes;
 import com.mrgregles.bsp_velocity_additions.tablist.NameFormatter;
 import com.mrgregles.bsp_velocity_additions.tablist.PrefixProvider;
@@ -46,7 +47,7 @@ import java.util.Optional;
         id = BspVelocityAdditions.ID,
         name = "BSP-Velocity Additions",
         version = BuildConstants.VERSION,
-        description = "Last server, shared chat, network tab list, join/leave messages, JourneyMap world ids and the Discord bot for the BSP proxy.",
+        description = "Last server, shared chat, network tab list, join/leave messages, JourneyMap world ids, the Discord bot and the Fourthwall store for the BSP proxy.",
         url = "https://github.com/Build-Secure-Protect",
         authors = {"Mrgregles"},
         dependencies = {@Dependency(id = "luckperms", optional = true)}
@@ -63,6 +64,7 @@ public final class BspVelocityAdditions {
     private Messages messages = Messages.defaults();
     private LastServerStore lastServers;
     private DiscordFeature discord;
+    private StoreFeature storeFeature;
 
     @Inject
     public BspVelocityAdditions(ProxyServer proxy, Logger logger, @DataDirectory Path dataDirectory) {
@@ -144,6 +146,7 @@ public final class BspVelocityAdditions {
             logger.info("journeyMap.enabled is false; JourneyMap world ids come from the servers, if any");
         }
         discord = DiscordFeature.start(config.discord(), messages, dataDirectory, System::getenv, logger).orElse(null);
+        storeFeature = StoreFeature.start(this, proxy, dataDirectory, System::getenv, messages, logger).orElse(null);
     }
 
     private void startJourneyMap(PluginConfig.JourneyMap settings) {
@@ -191,6 +194,9 @@ public final class BspVelocityAdditions {
         }
         if (discord != null) {
             discord.stop();
+        }
+        if (storeFeature != null) {
+            storeFeature.stop();
         }
         logger.info("BSP-Velocity Additions stopped");
     }

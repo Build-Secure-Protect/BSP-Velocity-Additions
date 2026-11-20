@@ -15,6 +15,8 @@ Features, in order of work:
 
 7. **Network kicks** (built, for BSP-Server Utilities): a game server can ask the proxy to disconnect a player from the whole network, so a kicked player is never moved to another server. `[networkKick]` in `config.toml`; contract in `docs/API.md`.
 
+8. **The Fourthwall store** (built, untested live): Fourthwall's webhooks become reward rows in the shared `bsp_shop` database, delivered in game by BSP-Server Shop. `/store link`, `/store claim`, `/store status`, and `/storeadmin` for staff. Off by default; setup in [`docs/STORE.md`](docs/STORE.md).
+
 Companion to the BSP Forge mods on the backends: BSP-Core, BSP-Region Guard, BSP-Teleport, BSP-RankUp and BSP-InventorySync. Anything this plugin needs from them is optional on their side, so a server without a proxy loses nothing.
 
 ## Requirements

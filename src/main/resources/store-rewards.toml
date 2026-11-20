@@ -1,0 +1,48 @@
+# BSP-Velocity Additions: what the Fourthwall store gives in game.
+# Products are found by their variant's SKU or, for products with no SKU (Fourthwall's digital products), by the
+# product's slug: the last part of its address, https://shop.buildsecureprotect.com/products/vip -> [products."vip"]
+# (decision D42). A SKU this file knows wins over the slug. Changing a product's address changes its slug, so update
+# this file too. Membership tiers are found by tier id ([memberships."tier id"]). A product in an order that is not
+# here gives nothing (staff are told). The entries below are EXAMPLES: replace them with the real products, tier ids
+# and LuckPerms groups (decision D41). /storeadmin reload re-reads this file.
+#
+# Commands run as the console of a BSP-Server Shop game server, in order, without a "/". Placeholders, filled with
+# checked values only: {player} {uuid} {quantity} {order} {sku}. ({order} is the order number; for a membership it
+# is the member id.) Nothing a buyer types ever goes into a command except a username Mojang has confirmed.
+#
+#   displayName    shown to the player when it arrives (plain text, at most 128 characters)
+#   target         "any": any game server, the player may be offline (ranks through LuckPerms);
+#                  "<server>": only that server, its name exactly as in velocity.toml
+#   requireOnline  true: only while the player is on that server (items); false: any time (ranks)
+#   safeToRetry    true when running the commands twice does no harm (LuckPerms parent add/remove); false for items
+#   perQuantity    products only. true: one delivery per unit bought; false: one delivery, {quantity} = the amount
+#   grant          the commands that give it
+#   revoke         the commands that take it back (a cancelled order, an ended membership); leave out for items
+#
+# A reward with a mistake (an unknown server, an unknown placeholder, a line break in a command) is left out when
+# the file loads, with an error line in the proxy console.
+
+[products."BSP-RANK-VIP"]
+displayName = "VIP rank"
+target = "any"
+requireOnline = false
+safeToRetry = true
+perQuantity = false
+grant = ["lp user {uuid} parent add vip"]
+revoke = ["lp user {uuid} parent remove vip"]
+
+[products."BSP-STARTER-KIT"]
+displayName = "Starter kit"
+target = "BSP-Frostwarf"
+requireOnline = true
+safeToRetry = false
+perQuantity = true
+grant = ["give {player} minecraft:oak_sapling 16", "give {player} minecraft:bread 32"]
+
+[memberships."TIER_ID_SUPPORTER"]
+displayName = "Supporter membership"
+target = "any"
+requireOnline = false
+safeToRetry = true
+grant = ["lp user {uuid} parent add supporter"]
+revoke = ["lp user {uuid} parent remove supporter"]

@@ -1,0 +1,61 @@
+# BSP-Velocity Additions: the Fourthwall store (BSP-Server Shop request SH-R1).
+# Fourthwall sends a signed webhook for every order and membership; the proxy checks it, works out the player and
+# writes reward rows into the shared MariaDB database bsp_shop, where BSP-Server Shop on the game servers runs them.
+#
+# Secrets are never written here: they are read from environment variables on this machine (Pterodactyl egg
+# variables on the proxy's Startup page): BSP_FOURTHWALL_WEBHOOK_SECRET, BSP_FOURTHWALL_API_USERNAME,
+# BSP_FOURTHWALL_API_PASSWORD, BSP_SHOP_DB_PASSWORD. Without all four the store stays off. Setup: docs/STORE.md.
+# What each product and membership gives is in store-rewards.toml. /storeadmin reload re-reads both files; the
+# sections marked "restart" need a proxy restart.
+enabled = false
+
+[http]
+# (restart) Where the webhook receiver listens. Inside the proxy's Docker container this is 0.0.0.0. A Pterodactyl
+# allocation 127.0.0.1:8765 publishes it only on mc-main itself (Wings binds such an allocation to its Docker gateway,
+# 172.18.0.1), where cloudflared forwards https://store-hooks.buildsecureprotect.com to it (decision D38).
+# Only POST <path> with a valid signature is accepted.
+bind = "0.0.0.0"
+port = 8765
+path = "/fourthwall/webhook"
+maxBodyBytes = 1048576
+
+[fourthwall]
+# (restart for apiBaseUrl) Fourthwall's Platform API, used by the daily resync and to read an order's contents.
+apiBaseUrl = "https://api.fourthwall.com"
+# Shown by /store.
+shopUrl = "https://shop.example.com"
+# Test-mode events from Fourthwall are stored but only processed when this is true (their rows are marked as test
+# rows, which BSP-Server Shop skips unless deliverTestRewards = true on that server). Only for testing.
+processTestEvents = false
+# true: store every event and do nothing else (for checking real payloads). Setting it back to false and running
+# /storeadmin reload processes what was stored.
+captureOnly = false
+
+[database]
+# (restart) The shared bsp_shop database. The password is BSP_SHOP_DB_PASSWORD.
+host = "192.168.1.25"
+port = 3306
+name = "bsp_shop"
+user = "bsp_shop"
+poolSize = 4
+
+[mojang]
+# (restart) Where usernames typed at checkout are checked, and for how many minutes an answer is kept.
+profileUrl = "https://api.mojang.com/users/profiles/minecraft/"
+cacheMinutes = 60
+
+[membership]
+# Subscription types that take a membership's rewards away. CANCELLED is left out on purpose: a cancelled
+# membership keeps its rewards until Fourthwall says the paid period has ended (SUSPENDED, NONE or EXPIRED).
+revokeOn = ["SUSPENDED", "NONE"]
+
+[reconcile]
+# (restart) Webhooks are not guaranteed: every intervalHours (and 2 minutes after the proxy starts, and on
+# /storeadmin resync) orders from the last orderLookbackDays and all members are read from Fourthwall's API.
+enabled = true
+intervalHours = 24
+orderLookbackDays = 14
+
+[security]
+# (restart) Failed /store link and /store claim tries allowed per player in any ten minutes.
+maxFailedClaimsPer10Min = 5

@@ -4,6 +4,25 @@ All notable changes to BSP-Velocity Additions. The format follows [Keep a Change
 
 ## [Unreleased]
 
+### Added
+- **The Fourthwall store (BSP-Server Shop request SH-R1, decisions D38 to D41):** off by default (`store.toml`, `enabled = false`).
+  - **Receiver:** checks the signature of every webhook and stores it in the shared MariaDB `bsp_shop` database, answering at once. It listens on `0.0.0.0:8765` inside the proxy's container, which a Pterodactyl allocation publishes on mc-main's loopback for `cloudflared`.
+  - **Processing:** orders, cancellations, email changes and memberships are handled on a worker thread. Only PENDING reward rows are written into `shop_rewards`, for BSP-Server Shop to deliver; replays and resyncs never write a second row.
+  - **Commands:** `/store` (link, claim, status) and `/storeadmin` (lookup, assign, unlink, grant, resync, reload; permission `bsp.shop.admin`). Emails are always masked.
+  - **Resync:** reads Fourthwall's API every 24 h.
+  - **Config:** what each SKU and tier gives is in `store-rewards.toml`, checked when it loads.
+  - **Secrets:** only from `BSP_FOURTHWALL_WEBHOOK_SECRET`, `BSP_FOURTHWALL_API_USERNAME`, `BSP_FOURTHWALL_API_PASSWORD` and `BSP_SHOP_DB_PASSWORD`.
+  - **Libraries:** HikariCP 6.3.0 and the MariaDB driver 3.4.1 are shaded and relocated; the jar is about 14 MB.
+  - **Docs:** `docs/STORE.md`.
+  - **Matching products:** a product is found by its variant's SKU or, for Fourthwall's digital products (which have no SKU), by its slug (D42).
+  - **`/storeadmin revoke [order]`:** takes an order back by hand after a refund or chargeback (T27, D43).
+  - **Fixed before release:**
+    - B7 to B15, from an audit;
+    - B16, Fourthwall's compressed API answers;
+    - B17, the connection pool's own stack traces in the console.
+  - **Tested live on 2026-11-20:** the webhook through Cloudflare, capture, orders by name, by link, by claim and by staff assign, the resync, and the database-down retry.
+  - **Not tested live:** memberships (not sold yet), cancellations (Fourthwall cannot cancel digital orders), and `/storeadmin revoke`.
+
 ## [0.2.1] - 2026-11-18
 
 ### Changed
