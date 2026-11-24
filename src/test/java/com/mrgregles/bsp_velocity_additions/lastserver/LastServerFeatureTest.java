@@ -1,6 +1,7 @@
 package com.mrgregles.bsp_velocity_additions.lastserver;
 
 import com.mrgregles.bsp_velocity_additions.config.PluginConfig;
+import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.player.KickedFromServerEvent;
 import com.velocitypowered.api.event.player.PlayerChooseInitialServerEvent;
 import com.velocitypowered.api.event.player.ServerConnectedEvent;
@@ -168,9 +169,122 @@ class LastServerFeatureTest {
         assertSame(disconnect, event.getResult());
     }
 
+    private static final long LONG_AGO = 1_000L;
+
+    private long afterNow() {
+        return System.currentTimeMillis() + 60_000L;
+    }
+
+    /** PR21: a reset player who is offline is simply forgotten; their next connection is recorded as usual. */
+    @Test
+    void aResetForgetsTheLastServerSoTheNextJoinIsLikeANewPlayers() {
+        store.put(steveId, "Steve", "BSP-Wild");
+        long resetMs = afterNow();
+
+        assertEquals(Optional.of("BSP-Wild"), feature.forget(steveId, resetMs, Optional.empty()));
+        assertEquals(Optional.empty(), feature.forget(steveId, resetMs, Optional.empty()), "a second notice finds nothing");
+
+        PlayerChooseInitialServerEvent event = new PlayerChooseInitialServerEvent(steve, spawn);
+        feature.onChooseInitialServer(event);
+        assertSame(spawn, event.getInitialServer().orElseThrow(), "the fallback, like a new player");
+        feature.onServerConnected(new ServerConnectedEvent(steve, spawn, null));
+        assertEquals(Optional.of("BSP-Spawn"), store.get(steveId));
+    }
+
+    /** PR21, audit 3: a late or repeated notice never forgets a player who has joined a server since the reset. */
+    @Test
+    void aPlayerWhoJoinedAServerAfterTheResetIsKept() {
+        store.put(steveId, "Steve", "BSP-Wild");
+
+        assertEquals(Optional.empty(), feature.forget(steveId, LONG_AGO, Optional.of(steve)));
+
+        assertEquals(Optional.of("BSP-Wild"), store.get(steveId));
+        assertFalse(feature.isHeld(steve), "nothing forgotten, so nothing held");
+    }
+
+    /** PR21: a player reset while online is not remembered again until they leave the network. */
+    @Test
+    void aPlayerResetWhileOnlineIsNotRememberedUntilTheyLeave() {
+        when(steve.isActive()).thenReturn(true);
+        store.put(steveId, "Steve", "BSP-Wild");
+
+        feature.forget(steveId, afterNow(), Optional.of(steve));
+        feature.onServerConnected(new ServerConnectedEvent(steve, spawn, wild));
+        assertEquals(Optional.empty(), store.get(steveId), "a switch in the same session is not recorded");
+
+        feature.onDisconnect(new DisconnectEvent(steve, DisconnectEvent.LoginStatus.SUCCESSFUL_LOGIN));
+        assertFalse(feature.isHeld(steve));
+
+        Player nextSession = sessionOf(steveId);
+        feature.onServerConnected(new ServerConnectedEvent(nextSession, spawn, null));
+        assertEquals(Optional.of("BSP-Spawn"), store.get(steveId), "the next session is recorded again");
+    }
+
+    /** Audit 1: a refused duplicate login (same uuid, another connection) does not end the hold on the real session. */
+    @Test
+    void aRefusedDuplicateLoginDoesNotReleaseTheHold() {
+        when(steve.isActive()).thenReturn(true);
+        store.put(steveId, "Steve", "BSP-Wild");
+        feature.forget(steveId, afterNow(), Optional.of(steve));
+
+        Player duplicate = sessionOf(steveId);
+        feature.onDisconnect(new DisconnectEvent(duplicate, DisconnectEvent.LoginStatus.CONFLICTING_LOGIN));
+        feature.onDisconnect(new DisconnectEvent(duplicate, DisconnectEvent.LoginStatus.CANCELLED_BY_PROXY));
+
+        assertTrue(feature.isHeld(steve));
+        feature.onServerConnected(new ServerConnectedEvent(steve, wild, spawn));
+        assertEquals(Optional.empty(), store.get(steveId), "the real session's switch is still not recorded");
+    }
+
+    /** Audit 2: a player who left between the online check and the hold does not have their next session blocked. */
+    @Test
+    void aPlayerWhoLeftDuringTheResetIsNotHeldIntoTheirNextSession() {
+        when(steve.isActive()).thenReturn(false);
+        store.put(steveId, "Steve", "BSP-Wild");
+
+        feature.forget(steveId, afterNow(), Optional.of(steve));
+        assertFalse(feature.isHeld(steve));
+
+        Player nextSession = sessionOf(steveId);
+        feature.onServerConnected(new ServerConnectedEvent(nextSession, spawn, null));
+        assertEquals(Optional.of("BSP-Spawn"), store.get(steveId));
+    }
+
+    /** Audit 2: a hold left over from an ended session never blocks a new session of the same player. */
+    @Test
+    void aStaleHoldFromAnEndedSessionIsDroppedOnTheNextConnection() {
+        when(steve.isActive()).thenReturn(true);
+        store.put(steveId, "Steve", "BSP-Wild");
+        feature.forget(steveId, afterNow(), Optional.of(steve));
+
+        Player nextSession = sessionOf(steveId);
+        feature.onServerConnected(new ServerConnectedEvent(nextSession, wild, null));
+
+        assertEquals(Optional.of("BSP-Wild"), store.get(steveId));
+        assertFalse(feature.isHeld(steve));
+    }
+
+    @Test
+    void leavingWithoutAResetChangesNothing() {
+        store.put(steveId, "Steve", "BSP-Wild");
+
+        feature.onDisconnect(new DisconnectEvent(steve, DisconnectEvent.LoginStatus.SUCCESSFUL_LOGIN));
+
+        assertEquals(Optional.of("BSP-Wild"), store.get(steveId));
+    }
+
+    private static Player sessionOf(UUID id) {
+        Player p = mock(Player.class);
+        when(p.getUniqueId()).thenReturn(id);
+        when(p.getUsername()).thenReturn("Steve");
+        when(p.getCurrentServer()).thenReturn(Optional.empty());
+        return p;
+    }
+
     /** A store without a file, for these tests. */
     private static final class InMemoryStore implements LastServerStore {
         private final Map<UUID, String> map = new java.util.HashMap<>();
+        private final Map<UUID, Long> at = new java.util.HashMap<>();
 
         @Override
         public Optional<String> get(UUID player) {
@@ -180,6 +294,16 @@ class LastServerFeatureTest {
         @Override
         public void put(UUID player, String name, String server) {
             map.put(player, server);
+            at.put(player, System.currentTimeMillis());
+        }
+
+        @Override
+        public Optional<String> remove(UUID player, long changedBeforeMs) {
+            if (!map.containsKey(player) || at.get(player) >= changedBeforeMs) {
+                return Optional.empty();
+            }
+            at.remove(player);
+            return Optional.ofNullable(map.remove(player));
         }
 
         @Override

@@ -250,3 +250,18 @@ Built and unit-tested on 2026-11-19 (version 0.3.0). The tests ran against H2 in
 - [ ] Install the rebuilt jar and restart. The `Store` lines are as before, and the console no longer shows `[...shaded.hikari...] BSP Store - Starting...`.
 - [x] (2026-11-20 01:57: `storeadmin revoke 1KQ6H2BG` wrote 1 take-back, and `storetest` was gone from BSPAdmin within 25 s) `storeadmin revoke <one of the test orders>`: `Order … taken back: 0 waiting reward(s) cancelled, 1 take-back(s) written.` Within a minute `lpv user bspadmin info` no longer lists `storetest`. A second run writes nothing.
 - [ ] Optional, B17 live: lock `'bsp_shop'@'172.18.%'` and close its connections as in test 11, then send a webhook or run `/store status`. Only the plugin's own lines appear, with no Hikari stack trace. Unlock afterwards.
+
+## 2026-11-24: player reset forgets the last server (PR21)
+
+**Built and tested:** 26 new unit tests (309 in all): `PlayerResetMessageTest` (the notice, a server id with `:`, what is ignored), `PlayerResetFeatureTest` (forgetting, twice, the file, Discord links untouched, the off switch, the warning for an unreadable notice, and two runs against a Redis stand-in on a socket: user, password and channel; a `NOPERM` subscription gives one error naming `[playerReset] redisUser`), `JsonLastServerStoreTest` (remove; an entry newer than the reset is kept) and `LastServerFeatureTest` (reset while online, a refused duplicate login, a player leaving during the reset, a stale hold). The duplicate-login and newer-entry tests failed against the code before the audit fixes. `check_proxy_api.sh` passes. Loaded on the local proxy with no Redis: one warning, then quiet retries.
+
+**Not yet tried against a real Redis or BSP-Core.** Needs BSP-Core with `/bsp player reset` installed on the backends.
+- [ ] Install the jar and restart. The log shows `Player reset: on, connecting to Redis <host>:<port> for BSP-Core's resets on channel bsp_core`, then `Player reset: listening on Redis ... channel bsp_core`. If it shows an ERROR `refused the login or the subscription to bsp_core (NOPERM)` (or `WRONGPASS`), the Redis user may not read `bsp_core`: set `[playerReset] redisUser` and `BSP_PLAYER_RESET_REDIS_PASSWORD`.
+- [ ] A test player joins BSP-Wild (not the fallback) and logs out. `last-servers.json` lists them on BSP-Wild.
+- [ ] Reset them while they are offline: `/bsp player reset <name> confirm` on any backend. The proxy logs `Player reset: forgot <name>'s last server BSP-Wild (reset by ... on ...)`. Within a few seconds `last-servers.json` no longer has them.
+- [ ] They join again: they land on the fallback server, as a new player would.
+- [ ] Reset them again while they are **online** on a server other than the fallback. The log ends with `not remembered again until they leave the network`. They switch servers, then log out and back in: they land on the fallback server. After that they are remembered as normal.
+- [ ] While they are online and held, try to log in with the same account from a second client (Velocity refuses it as a duplicate). The first session's next switch is still not remembered.
+- [ ] `discord-links.json` and their store orders (`/storeadmin lookup <name>`) are unchanged.
+- [ ] Optional: `[playerReset] enabled = false`, restart: the log shows `playerReset.enabled is false`, and a reset no longer changes `last-servers.json`.
+

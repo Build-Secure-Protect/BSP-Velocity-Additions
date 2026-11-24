@@ -2,6 +2,7 @@ package com.mrgregles.bsp_velocity_additions.lastserver;
 
 import com.mrgregles.bsp_velocity_additions.config.PluginConfig;
 import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.connection.DisconnectEvent;
 import com.velocitypowered.api.event.player.KickedFromServerEvent;
 import com.velocitypowered.api.event.player.PlayerChooseInitialServerEvent;
 import com.velocitypowered.api.event.player.ServerConnectedEvent;
@@ -10,8 +11,11 @@ import com.velocitypowered.api.proxy.server.RegisteredServer;
 import org.slf4j.Logger;
 
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Feature 1, "remember the last server" (project brief, decisions D1, D2, D10, D13).
@@ -24,6 +28,12 @@ public final class LastServerFeature {
     private final ServerReachability reachability;
     private final InitialServerChooser chooser;
     private final Logger logger;
+    /**
+     * Players reset (PR21) while online, with the session (the {@link Player} object) that was online then: nothing
+     * is recorded for that session. Compared by identity, so a refused duplicate login or a later session of the same
+     * player is never mistaken for it.
+     */
+    private final Map<UUID, Player> resetThisSession = new ConcurrentHashMap<>();
 
     public LastServerFeature(PluginConfig.LastServer config, LastServerStore store, ServerReachability reachability,
                              InitialServerChooser chooser, Logger logger) {
@@ -62,9 +72,57 @@ public final class LastServerFeature {
     public void onServerConnected(ServerConnectedEvent event) {
         String server = name(event.getServer());
         reachability.mark(server, true);
-        if (!config.isIgnored(server)) {
-            store.put(event.getPlayer().getUniqueId(), event.getPlayer().getUsername(), server);
+        Player player = event.getPlayer();
+        Player held = resetThisSession.get(player.getUniqueId());
+        if (held == player) {
+            return;
         }
+        if (held != null) {
+            // left over from a session that ended before the hold was set; this is a new session
+            releaseHold(player.getUniqueId(), held);
+        }
+        if (!config.isIgnored(server)) {
+            store.put(player.getUniqueId(), player.getUsername(), server);
+        }
+    }
+
+    /**
+     * A player reset (PR21): forgets the player's last server so their next join goes where a new player's does.
+     * Only an entry last changed before {@code resetMs} is forgotten, so a late or repeated notice never forgets a
+     * player who has joined a server since. A player who is online ({@code session}) when an entry is forgotten
+     * keeps playing, but nothing is recorded for that session, so a server switch before they leave the network
+     * does not bring a last server back. Any thread; idempotent.
+     *
+     * @return the server that was forgotten; empty when nothing older than the reset was on file
+     */
+    public Optional<String> forget(UUID player, long resetMs, Optional<Player> session) {
+        Optional<String> forgotten = store.remove(player, resetMs);
+        if (forgotten.isPresent() && session.isPresent()) {
+            Player online = session.get();
+            resetThisSession.put(player, online);
+            if (!online.isActive()) {
+                // they left between the lookup and the hold: no session to hold
+                releaseHold(player, online);
+            }
+        }
+        return forgotten;
+    }
+
+    /** True while the given session is held after a reset. */
+    boolean isHeld(Player session) {
+        return resetThisSession.get(session.getUniqueId()) == session;
+    }
+
+    @Subscribe
+    public void onDisconnect(DisconnectEvent event) {
+        if (event.getLoginStatus() == DisconnectEvent.LoginStatus.CONFLICTING_LOGIN) {
+            return; // a refused duplicate login; the real session is still online
+        }
+        releaseHold(event.getPlayer().getUniqueId(), event.getPlayer());
+    }
+
+    private void releaseHold(UUID player, Player session) {
+        resetThisSession.computeIfPresent(player, (id, held) -> held == session ? null : held);
     }
 
     /**

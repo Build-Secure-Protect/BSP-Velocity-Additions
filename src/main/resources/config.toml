@@ -77,6 +77,23 @@ redisChannel = "bsp_core:discord"
 # How many wrong codes one Discord user may type into /link in ten minutes before /link waits. 0 means no limit.
 wrongCodesPerTenMinutes = 5
 
+[playerReset]
+# BSP-Core's /bsp player reset: when a player is reset, the proxy forgets their last server, so their next join goes
+# to the fallback server like a new player's. A player who is online at the time is not remembered again until they
+# leave the network. Their Discord link and store records are kept. Needs Redis; the proxy listens on BSP-Core's
+# channel. Off: resets never reach the proxy and a reset player returns to their last server.
+enabled = true
+# Must equal storage.redis channel in BSP-Core's server config on every backend (not the Discord channel).
+redisChannel = "bsp_core"
+# Redis to listen on. Empty (or 0 for the port) means the same as under [discord]. The password is never written
+# here: it is read from the environment variable BSP_PLAYER_RESET_REDIS_PASSWORD, else BSP_REDIS_PASSWORD.
+# BSP-Core recommends limiting the Discord bot's Redis user to its own channel (bsp_core:discord), so that user
+# usually cannot read bsp_core: then set redisUser here, and BSP_PLAYER_RESET_REDIS_PASSWORD, to a user that may
+# subscribe to redisChannel. If Redis refuses it, the log shows one error naming this setting (NOPERM or WRONGPASS).
+redisHost = ""
+redisPort = 0
+redisUser = ""
+
 [networkKick]
 # Kicks a game server asks for (BSP-Server Utilities: the staff web panel, the AFK kick, a failed presence check).
 # The server sends the request on bsp_server_utilities:proxy over the player's own connection; the proxy disconnects

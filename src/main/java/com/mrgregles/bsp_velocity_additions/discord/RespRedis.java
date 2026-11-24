@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 
 /**
  * A small Redis client of the plugin's own, like each BSP mod's: RESP over two sockets, one for commands
- * ({@code GETDEL}, {@code SET}, {@code DEL}) and one that stays subscribed to {@code bsp_core:discord}. Both reconnect
+ * ({@code GETDEL}, {@code SET}, {@code DEL}) and one that stays subscribed to one channel ({@code bsp_core:discord} for the bot, {@code bsp_core} for player resets). Both reconnect
  * after a drop; the subscriber waits 1 s, doubling to 30 s, and pings an idle connection so a dead one is noticed.
  * The password is passed in (from {@code BSP_REDIS_PASSWORD}) and never logged; Redis error replies are logged by
  * their first word only ({@code WRONGPASS}, {@code NOPERM}...). {@code GETDEL} needs Redis 6.2 or newer.
@@ -48,6 +48,10 @@ public final class RespRedis implements KeyValueStore, AutoCloseable {
     private final String user;
     private final String password;
     private final Logger logger;
+    /** The name at the start of each log line and in the subscriber thread's name ("Herald", "Player reset"). */
+    private final String label;
+    /** Added to the one error line when Redis refuses the login or the subscription; tells staff which setting to fix. */
+    private final String accessHint;
 
     private Socket commandSocket;
     private InputStream commandIn;
@@ -58,6 +62,12 @@ public final class RespRedis implements KeyValueStore, AutoCloseable {
     private Thread subscriber;
 
     public RespRedis(String host, int port, String user, String password, Logger logger) {
+        this(host, port, user, password, logger, "Herald", "check discord.redisUser and BSP_REDIS_PASSWORD");
+    }
+
+    public RespRedis(String host, int port, String user, String password, Logger logger, String label, String accessHint) {
+        this.label = label;
+        this.accessHint = accessHint == null ? "" : accessHint;
         this.host = host;
         this.port = port;
         this.user = user == null ? "" : user;
@@ -135,7 +145,7 @@ public final class RespRedis implements KeyValueStore, AutoCloseable {
      * {@code onMessage} gets each message's text. Both run on the subscriber thread and must hand work on quickly.
      */
     public void subscribe(String channel, Consumer<String> onMessage, Runnable onReady) {
-        subscriber = new Thread(() -> listen(channel, onMessage, onReady), "BSP Herald Redis");
+        subscriber = new Thread(() -> listen(channel, onMessage, onReady), "BSP " + label + " Redis");
         subscriber.setDaemon(true);
         subscriber.start();
     }
@@ -143,6 +153,7 @@ public final class RespRedis implements KeyValueStore, AutoCloseable {
     private void listen(String channel, Consumer<String> onMessage, Runnable onReady) {
         long backoff = 1_000L;
         boolean down = false;
+        String lastProblem = null;
         while (!closed) {
             try (Socket s = open(SUBSCRIBER_IDLE_MS)) {
                 subscriberSocket = s;
@@ -171,11 +182,12 @@ public final class RespRedis implements KeyValueStore, AutoCloseable {
                     if (kind.equals("subscribe")) {
                         backoff = 1_000L;
                         if (down) {
-                            logger.info("Herald: Redis answers again at {}:{}", host, port);
+                            logger.info("{}: Redis answers again at {}:{}", label, host, port);
                         } else {
-                            logger.info("Herald: listening on Redis {}:{} channel {}", host, port, channel);
+                            logger.info("{}: listening on Redis {}:{} channel {}", label, host, port, channel);
                         }
                         down = false;
+                        lastProblem = null;
                         safely(onReady);
                     } else if (kind.equals("message") && parts.size() >= 3 && parts.get(2) instanceof String text) {
                         safely(() -> onMessage.accept(text));
@@ -185,11 +197,16 @@ public final class RespRedis implements KeyValueStore, AutoCloseable {
                 if (closed) {
                     break;
                 }
-                if (!down) {
-                    logger.warn("Herald: Redis at {}:{} is not answering ({}); retrying", host, port,
-                            e instanceof RedisError ? e.getMessage() : e.getClass().getSimpleName());
-                    down = true;
+                String problem = e instanceof RedisError ? e.getMessage() : e.getClass().getSimpleName();
+                if (!problem.equals(lastProblem)) {
+                    if (isAccessRefusal(problem)) {
+                        logger.error(accessRefusedLine(label, host, port, channel, problem, accessHint));
+                    } else {
+                        logger.warn("{}: Redis at {}:{} is not answering ({}); retrying", label, host, port, problem);
+                    }
+                    lastProblem = problem;
                 }
+                down = true;
             }
             if (closed) {
                 break;
@@ -204,11 +221,22 @@ public final class RespRedis implements KeyValueStore, AutoCloseable {
         }
     }
 
+    /** Redis refused who we are or what we asked for: retrying alone will not fix it. */
+    static boolean isAccessRefusal(String code) {
+        return code.equals("NOPERM") || code.equals("WRONGPASS") || code.equals("NOAUTH");
+    }
+
+    /** The one error line for a refused login or subscription; never contains the password. */
+    static String accessRefusedLine(String label, String host, int port, String channel, String code, String hint) {
+        return label + ": Redis at " + host + ":" + port + " refused the login or the subscription to " + channel
+                + " (" + code + ")" + (hint.isEmpty() ? "" : "; " + hint) + "; retrying";
+    }
+
     private void safely(Runnable r) {
         try {
             r.run();
         } catch (RuntimeException e) {
-            logger.warn("Herald: a Redis message could not be handled ({})", e.getClass().getSimpleName());
+            logger.warn("{}: a Redis message could not be handled ({})", label, e.getClass().getSimpleName());
         }
     }
 

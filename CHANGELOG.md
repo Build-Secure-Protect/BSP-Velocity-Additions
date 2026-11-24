@@ -4,6 +4,18 @@ All notable changes to BSP-Velocity Additions. The format follows [Keep a Change
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-24
+
+### Added
+- **BSP-Core's player reset reaches the proxy (decision PR21):** when staff run `/bsp player reset <name> confirm` on any server, the proxy forgets that player's last server in `last-servers.json`, so their next join goes to the fallback server like a new player's. A player who is online at the time keeps playing, but nothing is recorded for that session until they leave the network. Their Discord link and store records are kept.
+  - **How:** the proxy listens on BSP-Core's Redis channel (`bsp_core` by default) for `player_reset` notices. It forgets an entry only if the entry last changed before the reset, so a late or repeated notice never forgets a player who has joined a server since. Every other message there is ignored; a `player_reset` notice that cannot be read gets one warning line.
+  - **Config:** `[playerReset]` in `config.toml`: `enabled` (on), `redisChannel` (must equal `storage.redis channel` in BSP-Core's server config), and `redisHost`, `redisPort` and `redisUser`, which take the `[discord]` values when left empty. A `config.toml` without the section works the same way. The password comes from `BSP_PLAYER_RESET_REDIS_PASSWORD`, else `BSP_REDIS_PASSWORD`. Needs `lastServer.enabled`. BSP-Core recommends limiting the Discord bot's Redis user to its own channel, so that user usually cannot read `bsp_core`; if Redis refuses the login or the subscription (`NOPERM`, `WRONGPASS`, `NOAUTH`), the log shows one error naming `[playerReset] redisUser`. The Discord bot now logs the same kind of refusal as an error naming `discord.redisUser`.
+  - **Known gap:** a reset made while the proxy or Redis is down never reaches the proxy, so that player still returns to their last server.
+  - **Fixed before release** (audit, 2026-11-24): a refused duplicate login ended the hold on a player reset while online; a player leaving at the moment of the reset could be held into their next session; a late notice could forget a player who had played since; a refused Redis user was logged as "not answering"; an origin server id containing `:` was misread.
+  - **Not tested live:** against a real Redis and BSP-Core.
+
+## [0.3.0] - 2026-11-20
+
 ### Added
 - **The Fourthwall store (BSP-Server Shop request SH-R1, decisions D38 to D41):** off by default (`store.toml`, `enabled = false`).
   - **Receiver:** checks the signature of every webhook and stores it in the shared MariaDB `bsp_shop` database, answering at once. It listens on `0.0.0.0:8765` inside the proxy's container, which a Pterodactyl allocation publishes on mc-main's loopback for `cloudflared`.

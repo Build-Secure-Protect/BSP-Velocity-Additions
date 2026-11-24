@@ -19,7 +19,8 @@ import java.util.stream.Collectors;
  * bundled template, so the comments in the file are the documentation. Missing keys take their defaults.
  */
 public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList tabList, Players players, Chat chat,
-                           Discord discord, JourneyMap journeyMap, NetworkKick networkKick, ChatHistory chatHistory) {
+                           Discord discord, JourneyMap journeyMap, NetworkKick networkKick, ChatHistory chatHistory,
+                           PlayerReset playerReset) {
 
     public static final String FILE_NAME = "config.toml";
 
@@ -122,9 +123,22 @@ public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList t
         public static final ChatHistory DEFAULTS = new ChatHistory(true, 50, 30);
     }
 
+    /**
+     * BSP-Core's player reset (decision PR21 in the vault note "Player Reset"): the proxy listens on BSP-Core's Redis
+     * channel (the backends' {@code storage.redis channel}) and forgets a reset player's last server. The Redis
+     * address and user fall back to the {@code [discord]} ones when left empty here; the password is never a setting
+     * (environment variables, see {@code PlayerResetFeature}).
+     */
+    public record PlayerReset(boolean enabled, String redisHost, int redisPort, String redisUser, String redisChannel) {
+
+        public static final String DEFAULT_CHANNEL = "bsp_core";
+        public static final PlayerReset DEFAULTS = new PlayerReset(true, Discord.DEFAULTS.redisHost(),
+                Discord.DEFAULTS.redisPort(), Discord.DEFAULTS.redisUser(), DEFAULT_CHANNEL);
+    }
+
     public static PluginConfig defaults() {
         return new PluginConfig(LastServer.DEFAULTS, JoinLeave.DEFAULTS, TabList.DEFAULTS, Players.DEFAULTS, Chat.DEFAULTS,
-                Discord.DEFAULTS, JourneyMap.DEFAULTS, NetworkKick.DEFAULTS, ChatHistory.DEFAULTS);
+                Discord.DEFAULTS, JourneyMap.DEFAULTS, NetworkKick.DEFAULTS, ChatHistory.DEFAULTS, PlayerReset.DEFAULTS);
     }
 
     /** Creates the file from the template when it is missing, then reads it. A broken file falls back to the defaults. */
@@ -149,10 +163,30 @@ public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList t
     }
 
     static PluginConfig parse(Toml toml) {
+        Discord discord = parseDiscord(toml.getTable("discord"));
         return new PluginConfig(parseLastServer(toml.getTable("lastServer")), parseJoinLeave(toml.getTable("joinLeave")),
                 parseTabList(toml.getTable("tabList")), parsePlayers(toml.getTable("players")), parseChat(toml.getTable("chat")),
-                parseDiscord(toml.getTable("discord")), parseJourneyMap(toml.getTable("journeyMap")),
-                parseNetworkKick(toml.getTable("networkKick")), parseChatHistory(toml.getTable("chatHistory")));
+                discord, parseJourneyMap(toml.getTable("journeyMap")),
+                parseNetworkKick(toml.getTable("networkKick")), parseChatHistory(toml.getTable("chatHistory")),
+                parsePlayerReset(toml.getTable("playerReset"), discord));
+    }
+
+    /** Empty {@code redisHost} / {@code redisUser} and a {@code redisPort} of 0 (or missing keys) take the {@code [discord]} values. */
+    private static PlayerReset parsePlayerReset(Toml section, Discord discord) {
+        if (section == null) {
+            return new PlayerReset(PlayerReset.DEFAULTS.enabled(), discord.redisHost(), discord.redisPort(),
+                    discord.redisUser(), PlayerReset.DEFAULT_CHANNEL);
+        }
+        String host = section.getString("redisHost", "").trim();
+        long port = section.getLong("redisPort", 0L);
+        String user = section.getString("redisUser", "").trim();
+        String channel = section.getString("redisChannel", PlayerReset.DEFAULT_CHANNEL).trim();
+        return new PlayerReset(
+                section.getBoolean("enabled", PlayerReset.DEFAULTS.enabled()),
+                host.isEmpty() ? discord.redisHost() : host,
+                port <= 0L ? discord.redisPort() : (int) Math.min(65535L, port),
+                user.isEmpty() ? discord.redisUser() : user,
+                channel.isEmpty() ? PlayerReset.DEFAULT_CHANNEL : channel);
     }
 
     private static ChatHistory parseChatHistory(Toml section) {

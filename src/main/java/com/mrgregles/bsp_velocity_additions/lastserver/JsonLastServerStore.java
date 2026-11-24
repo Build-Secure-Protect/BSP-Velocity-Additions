@@ -67,6 +67,23 @@ public final class JsonLastServerStore implements LastServerStore {
     }
 
     @Override
+    public Optional<String> remove(UUID player, long changedBeforeMs) {
+        String[] removed = new String[1];
+        entries.computeIfPresent(player, (id, e) -> {
+            if (e.at() < changedBeforeMs) {
+                removed[0] = e.server();
+                return null;
+            }
+            return e;
+        });
+        if (removed[0] == null) {
+            return Optional.empty();
+        }
+        scheduleSave();
+        return Optional.of(removed[0]);
+    }
+
+    @Override
     public int size() {
         return entries.size();
     }

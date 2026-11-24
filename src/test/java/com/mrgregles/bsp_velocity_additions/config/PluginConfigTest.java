@@ -132,6 +132,52 @@ class PluginConfigTest {
         assertEquals(0, d.wrongCodesPerTenMinutes());
     }
 
+    /** PR21: on by default on BSP-Core's storage channel, switchable off, Redis taken from [discord] unless given. */
+    @Test
+    void playerResetIsOnByDefaultAndFallsBackToTheDiscordRedis(@TempDir Path dir) throws Exception {
+        PluginConfig fresh = PluginConfig.load(dir.resolve("fresh"), mock(Logger.class));
+        assertEquals(PluginConfig.PlayerReset.DEFAULTS, fresh.playerReset(), "the bundled template reads as the defaults");
+        assertTrue(PluginConfig.PlayerReset.DEFAULTS.enabled());
+        assertEquals("bsp_core", PluginConfig.PlayerReset.DEFAULTS.redisChannel());
+
+        Files.writeString(dir.resolve(PluginConfig.FILE_NAME), """
+                [discord]
+                redisHost = "192.168.1.25"
+                redisPort = 6380
+                redisUser = "herald"
+                """);
+        PluginConfig.PlayerReset noSection = PluginConfig.load(dir, mock(Logger.class)).playerReset();
+        assertEquals(new PluginConfig.PlayerReset(true, "192.168.1.25", 6380, "herald", "bsp_core"), noSection,
+                "a config.toml from before PR21");
+
+        Files.writeString(dir.resolve(PluginConfig.FILE_NAME), """
+                [discord]
+                redisHost = "192.168.1.25"
+                redisPort = 6380
+                redisUser = "herald"
+
+                [playerReset]
+                enabled = true
+                redisChannel = ""
+                redisHost = ""
+                redisPort = 0
+                redisUser = ""
+                """);
+        assertEquals(new PluginConfig.PlayerReset(true, "192.168.1.25", 6380, "herald", "bsp_core"),
+                PluginConfig.load(dir, mock(Logger.class)).playerReset(), "empty values take [discord]'s and the default channel");
+
+        Files.writeString(dir.resolve(PluginConfig.FILE_NAME), """
+                [playerReset]
+                enabled = false
+                redisChannel = "bsp_test"
+                redisHost = "10.0.0.5"
+                redisPort = 99999
+                redisUser = "proxy"
+                """);
+        assertEquals(new PluginConfig.PlayerReset(false, "10.0.0.5", 65535, "proxy", "bsp_test"),
+                PluginConfig.load(dir, mock(Logger.class)).playerReset());
+    }
+
     @Test
     void aDiscordIdThatIsNotANumberCountsAsUnset(@TempDir Path dir) throws Exception {
         Files.writeString(dir.resolve(PluginConfig.FILE_NAME), """
