@@ -132,6 +132,20 @@ class PluginConfigTest {
         assertEquals(0, d.wrongCodesPerTenMinutes());
     }
 
+    /** D45: the season reset is on by default (also without the section) and can be switched off. */
+    @Test
+    void seasonResetIsOnByDefaultAndCanBeSwitchedOff(@TempDir Path dir) throws Exception {
+        PluginConfig fresh = PluginConfig.load(dir.resolve("fresh"), mock(Logger.class));
+        assertEquals(PluginConfig.SeasonReset.DEFAULTS, fresh.seasonReset(), "the bundled template reads as the defaults");
+        assertTrue(PluginConfig.SeasonReset.DEFAULTS.enabled());
+
+        Files.writeString(dir.resolve(PluginConfig.FILE_NAME), "[playerReset]\nenabled = true\n");
+        assertTrue(PluginConfig.load(dir, mock(Logger.class)).seasonReset().enabled(), "a config.toml from before D45");
+
+        Files.writeString(dir.resolve(PluginConfig.FILE_NAME), "[seasonReset]\nenabled = false\n");
+        assertEquals(new PluginConfig.SeasonReset(false), PluginConfig.load(dir, mock(Logger.class)).seasonReset());
+    }
+
     /** PR21: on by default on BSP-Core's storage channel, switchable off, Redis taken from [discord] unless given. */
     @Test
     void playerResetIsOnByDefaultAndFallsBackToTheDiscordRedis(@TempDir Path dir) throws Exception {

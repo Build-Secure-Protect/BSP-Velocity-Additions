@@ -150,6 +150,43 @@ class PlayerResetFeatureTest {
                 (Object) eq("player_reset:BSP-Spawn:garbage?INFO fake"));
     }
 
+    /** D45: season_reset notices on the same subscription go to the season reset, never to the player reset. */
+    @Test
+    void seasonResetNoticesGoToTheSeasonReset() {
+        List<UUID> forgotten = new ArrayList<>();
+        Player p = mock(Player.class);
+        SeasonResetFeature season = new SeasonResetFeature((ms, on) -> 0, () -> List.of(p),
+                com.mrgregles.bsp_velocity_additions.config.Messages.defaults(), null, () -> 1L, mock(Logger.class));
+        PlayerResetFeature feature = new PlayerResetFeature((id, ms, on) -> {
+            forgotten.add(id);
+            return Optional.empty();
+        }, season, this::session, mock(Logger.class));
+
+        assertTrue(feature.onRedisMessage("season_reset:BSP-Spawn:2"));
+        assertFalse(feature.onRedisMessage("season_reset:BSP-Spawn:2"), "the second one does nothing");
+        assertTrue(feature.onRedisMessage(reset(steve)), "player resets still work");
+
+        verify(p).disconnect(org.mockito.ArgumentMatchers.any());
+        assertEquals(List.of(steve), forgotten);
+        assertFalse(new PlayerResetFeature((id, ms, on) -> Optional.empty(), this::session, mock(Logger.class))
+                .onRedisMessage("season_reset:BSP-Spawn:3"), "season resets off: ignored");
+    }
+
+    /** D45: with lastServer.enabled = false a player reset has nothing to do, but a season reset still applies. */
+    @Test
+    void withoutTheLastServerFeatureOnlySeasonResetsAreApplied() {
+        Player p = mock(Player.class);
+        SeasonResetFeature season = new SeasonResetFeature(null, () -> List.of(p),
+                com.mrgregles.bsp_velocity_additions.config.Messages.defaults(), null, () -> 1L, mock(Logger.class));
+        PlayerResetFeature feature = new PlayerResetFeature(null, season, this::session, mock(Logger.class));
+
+        assertFalse(feature.onRedisMessage(reset(steve)));
+        assertTrue(feature.onRedisMessage("season_reset:BSP-Spawn:2"));
+        verify(p).disconnect(org.mockito.ArgumentMatchers.any());
+        assertTrue(PlayerResetFeature.start(PluginConfig.PlayerReset.DEFAULTS, null, null, u -> Optional.empty(),
+                k -> null, mock(Logger.class)).isEmpty(), "neither on: not listening");
+    }
+
     @Test
     void doesNotStartWhenSwitchedOffOrWithoutTheLastServerFeature() {
         PluginConfig.PlayerReset off = new PluginConfig.PlayerReset(false, "127.0.0.1", 6379, "", "bsp_core");
@@ -217,6 +254,56 @@ class PlayerResetFeatureTest {
             assertEquals(List.of(steve), forgotten, "the credit message was ignored");
             assertEquals(List.of("AUTH", "proxy", "reset-pw"), commands.get(0));
             assertEquals(List.of("SUBSCRIBE", "bsp_core"), commands.get(1));
+        }
+    }
+
+    /** D45 end to end: with the last-server feature off, the subscription still starts and a season reset applies. */
+    @Test
+    void aSeasonResetArrivesOverRedisWithoutTheLastServerFeature() throws Exception {
+        try (ServerSocket server = new ServerSocket(0, 50, InetAddress.getLoopbackAddress())) {
+            Thread t = new Thread(() -> {
+                try (Socket s = server.accept()) {
+                    InputStream in = new BufferedInputStream(s.getInputStream());
+                    OutputStream out = s.getOutputStream();
+                    while (true) {
+                        List<String> cmd = readCommand(in);
+                        String reply = cmd.get(0).equals("SUBSCRIBE")
+                                ? "*3\r\n$9\r\nsubscribe\r\n" + bulk(cmd.get(1)) + ":1\r\n"
+                                + "*3\r\n$7\r\nmessage\r\n" + bulk(cmd.get(1)) + bulk("season_reset:BSP-Spawn:5|12")
+                                : "+OK\r\n";
+                        out.write(reply.getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+                    }
+                } catch (IOException closed) {
+                    // the client went away
+                }
+            });
+            t.setDaemon(true);
+            t.start();
+
+            CountDownLatch kicked = new CountDownLatch(1);
+            List<String> reasons = new CopyOnWriteArrayList<>();
+            Player p = mock(Player.class);
+            org.mockito.Mockito.doAnswer(i -> {
+                reasons.add(net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                        .serialize(i.getArgument(0)));
+                kicked.countDown();
+                return null;
+            }).when(p).disconnect(org.mockito.ArgumentMatchers.any());
+            SeasonResetFeature season = new SeasonResetFeature(null, () -> List.of(p),
+                    com.mrgregles.bsp_velocity_additions.config.Messages.defaults(), null, () -> 1L, mock(Logger.class));
+            PluginConfig.PlayerReset settings = new PluginConfig.PlayerReset(true, "127.0.0.1", server.getLocalPort(),
+                    "proxy", "bsp_core");
+            PlayerResetFeature feature = PlayerResetFeature.start(settings, null, season, u -> Optional.empty(),
+                    k -> "pw", mock(Logger.class)).orElseThrow();
+            try {
+                assertTrue(kicked.await(10, TimeUnit.SECONDS), "the notice reached the season reset");
+            } finally {
+                feature.stop();
+            }
+            assertEquals(5, season.lastApplied());
+            assertEquals(List.of("Season 12 has begun! Everyone starts over. Log in again to get your fresh Shatter Totem."),
+                    reasons, "BSP-Core's payload <resetEpoch>|<season> (VA-C4)");
         }
     }
 

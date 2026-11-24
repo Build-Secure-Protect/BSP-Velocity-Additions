@@ -156,3 +156,10 @@ resyncFailed = "<red>Resync failed: <reason>"
 reloaded = "<green>Store config reloaded: <products> product(s), <memberships> membership tier(s)<problems>."
 reloadFailed = "<red>Reload failed; the old config stays: <reason>"
 staffWarning = "<red>[Store]</red> <yellow><text>"
+
+[seasonReset]
+# The disconnect screen every player sees when BSP-Core's /bsp season reset reaches the proxy. The same words and
+# colour as BSP-Core's own kick, so a player sees one screen whichever arrives first. <season> is the season that is
+# starting, sent by BSP-Core; kickNoNumber is only for a BSP-Core too old to send it.
+kick = "<gold>Season <season> has begun! Everyone starts over. Log in again to get your fresh Shatter Totem."
+kickNoNumber = "<gold>A new season has begun! Everyone starts over. Log in again to get your fresh Shatter Totem."

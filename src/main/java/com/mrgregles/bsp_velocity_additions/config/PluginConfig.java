@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  */
 public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList tabList, Players players, Chat chat,
                            Discord discord, JourneyMap journeyMap, NetworkKick networkKick, ChatHistory chatHistory,
-                           PlayerReset playerReset) {
+                           PlayerReset playerReset, SeasonReset seasonReset) {
 
     public static final String FILE_NAME = "config.toml";
 
@@ -136,9 +136,20 @@ public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList t
                 Discord.DEFAULTS.redisPort(), Discord.DEFAULTS.redisUser(), DEFAULT_CHANNEL);
     }
 
+    /**
+     * BSP-Core's season reset (decision D45): on a {@code season_reset} notice on BSP-Core's Redis channel the proxy
+     * forgets every player's last server and disconnects every player. Heard on the {@code [playerReset]}
+     * subscription, so it needs {@code playerReset.enabled}.
+     */
+    public record SeasonReset(boolean enabled) {
+
+        public static final SeasonReset DEFAULTS = new SeasonReset(true);
+    }
+
     public static PluginConfig defaults() {
         return new PluginConfig(LastServer.DEFAULTS, JoinLeave.DEFAULTS, TabList.DEFAULTS, Players.DEFAULTS, Chat.DEFAULTS,
-                Discord.DEFAULTS, JourneyMap.DEFAULTS, NetworkKick.DEFAULTS, ChatHistory.DEFAULTS, PlayerReset.DEFAULTS);
+                Discord.DEFAULTS, JourneyMap.DEFAULTS, NetworkKick.DEFAULTS, ChatHistory.DEFAULTS, PlayerReset.DEFAULTS,
+                SeasonReset.DEFAULTS);
     }
 
     /** Creates the file from the template when it is missing, then reads it. A broken file falls back to the defaults. */
@@ -168,7 +179,14 @@ public record PluginConfig(LastServer lastServer, JoinLeave joinLeave, TabList t
                 parseTabList(toml.getTable("tabList")), parsePlayers(toml.getTable("players")), parseChat(toml.getTable("chat")),
                 discord, parseJourneyMap(toml.getTable("journeyMap")),
                 parseNetworkKick(toml.getTable("networkKick")), parseChatHistory(toml.getTable("chatHistory")),
-                parsePlayerReset(toml.getTable("playerReset"), discord));
+                parsePlayerReset(toml.getTable("playerReset"), discord), parseSeasonReset(toml.getTable("seasonReset")));
+    }
+
+    private static SeasonReset parseSeasonReset(Toml section) {
+        if (section == null) {
+            return SeasonReset.DEFAULTS;
+        }
+        return new SeasonReset(section.getBoolean("enabled", SeasonReset.DEFAULTS.enabled()));
     }
 
     /** Empty {@code redisHost} / {@code redisUser} and a {@code redisPort} of 0 (or missing keys) take the {@code [discord]} values. */

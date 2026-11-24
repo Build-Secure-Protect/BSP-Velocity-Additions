@@ -4,6 +4,17 @@ All notable changes to BSP-Velocity Additions. The format follows [Keep a Change
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-11-24
+
+### Added
+- **BSP-Core's season reset reaches the proxy (decision D45; BSP-Core's SR2 and SR15):** when staff run `/bsp season reset`, the proxy disconnects every player on the network and forgets every player's last server in `last-servers.json`, so everyone's next join goes to the fallback server. BSP-Core also sends the players of each backend off; the proxy makes it network-wide at once. Discord links and store records are kept.
+  - **The screen:** "Season N has begun! Everyone starts over. Log in again to get your fresh Shatter Totem." in gold, the same as BSP-Core's own kick (option A of `tools/preview/season_reset_kick_mockups.html`), where N is the season that is starting. BSP-Core sends it in the notice as `<resetNumber>|<season>` (request VA-C4). A BSP-Core too old to send it gets "A new season has begun! ..." (`seasonReset.kickNoNumber`).
+  - **How:** the `[playerReset]` subscription to BSP-Core's Redis channel now also reads `season_reset` notices. A reset is applied once: the highest reset number applied is kept in `season-reset.json`, so a repeat or an older notice does nothing, across restarts too. A `season_reset` notice that cannot be read gets one warning line.
+  - **Config:** `[seasonReset] enabled` (on; a `config.toml` without the section counts as on). Needs `[playerReset] enabled`. With `lastServer.enabled = false` players are still disconnected. The subscription now also starts when only the season reset has something to do.
+  - **Known gap:** a season reset sent while the proxy or Redis is down never reaches the proxy, so players keep their last servers (each backend still runs its own reset and sends its players off).
+  - **Fixed before release** (audit, 2026-11-24): a restart after a season reset could import VelocityRememberServer's old `locations.yml` into the now empty `last-servers.json` (the import now runs once, marked by `velocityrememberserver-imported` in the data folder); a server switch finishing between the forget and the disconnect was remembered (online sessions are now held, as for a player reset); a reset number older than the last applied was only an info line (now a warning); a notice with more `|` fields than expected was skipped (fields after the reset number and season are now ignored).
+  - **Not tested live:** against a real Redis and BSP-Core.
+
 ## [0.3.1] - 2026-11-24
 
 ### Added

@@ -94,6 +94,15 @@ redisHost = ""
 redisPort = 0
 redisUser = ""
 
+[seasonReset]
+# BSP-Core's /bsp season reset: the proxy forgets every player's last server, so everyone's next join goes to the
+# fallback server, and disconnects every player on the network with seasonReset.kick from messages.toml. Discord
+# links and store records are kept. Heard on the [playerReset] Redis subscription, so it needs playerReset.enabled.
+# A reset is applied once: the last reset number is kept in season-reset.json, and a repeat does nothing.
+# Off: BSP-Core still sends each server's players off, but the proxy forgets nothing: an offline player returns to
+# their last server, and an online player kicked by a backend may be moved to another server that is remembered.
+enabled = true
+
 [networkKick]
 # Kicks a game server asks for (BSP-Server Utilities: the staff web panel, the AFK kick, a failed presence check).
 # The server sends the request on bsp_server_utilities:proxy over the player's own connection; the proxy disconnects

@@ -17,6 +17,8 @@ Features, in order of work:
 
 8. **The Fourthwall store** (built, untested live): Fourthwall's webhooks become reward rows in the shared `bsp_shop` database, delivered in game by BSP-Server Shop. `/store link`, `/store claim`, `/store status`, and `/storeadmin` for staff. Off by default; setup in [`docs/STORE.md`](docs/STORE.md).
 
+9. **BSP-Core's player and season resets** (built, untested live): the proxy listens on BSP-Core's Redis channel. `/bsp player reset` makes it forget that player's last server; `/bsp season reset` disconnects every player on the network and forgets every last server, so everyone starts at spawn. Discord links and store records are kept. `[playerReset]` and `[seasonReset]` in `config.toml`; contract in `docs/API.md`.
+
 Companion to the BSP Forge mods on the backends: BSP-Core, BSP-Region Guard, BSP-Teleport, BSP-RankUp and BSP-InventorySync. Anything this plugin needs from them is optional on their side, so a server without a proxy loses nothing.
 
 ## Requirements
@@ -51,12 +53,13 @@ Companion to the BSP Forge mods on the backends: BSP-Core, BSP-Region Guard, BSP
 | `chat.enabled` | `true` | Forward BSP-Core's relayed chat lines to the other servers. |
 | `chat.useBackendFormatting` | `true` | Show the line as the speaker's server formatted it. Off: a plain `<Name> text`. |
 | `chat.logToConsole` | `true` | Print relayed lines to the proxy console with their server. |
+| `seasonReset.enabled` | `true` | On BSP-Core's `/bsp season reset`, disconnect every player and forget every last server. Needs `playerReset.enabled`, whose Redis subscription it shares. |
 
 A section missing from an older `config.toml` runs with its defaults; copy it from the template inside the jar to see the keys.
 
 ## Messages (`messages.toml`)
 
-Every line a player can see, in [MiniMessage](https://docs.advntr.dev/minimessage/format.html). Join and leave lines take `<player>` and `<server>`; the tab list header and footer take `<online>` and `<ping>`; each name (`tabList.entry`, used only where a player's server gives no name of its own) takes `<player>`, `<prefix>` and `<staff>`; `/players` lines take `<online>`, `<names>`, `<servers>`, `<server>` and `<count>`; relayed chat (`chat.relay` for everyone, `chat.relayStaff` for staff) takes `<line>`, `<player>`, `<text>` and `<server>`. Server switches are never announced and the tab list never shows a server, by design: both would let players track each other. A line you delete falls back to the bundled default. Restart the proxy after editing.
+Every line a player can see, in [MiniMessage](https://docs.advntr.dev/minimessage/format.html). Join and leave lines take `<player>` and `<server>`; the tab list header and footer take `<online>` and `<ping>`; each name (`tabList.entry`, used only where a player's server gives no name of its own) takes `<player>`, `<prefix>` and `<staff>`; `/players` lines take `<online>`, `<names>`, `<servers>`, `<server>` and `<count>`; relayed chat (`chat.relay` for everyone, `chat.relayStaff` for staff) takes `<line>`, `<player>`, `<text>` and `<server>`; the season reset's disconnect screen is `seasonReset.kick` (with `<season>`) or `seasonReset.kickNoNumber` when the season's number is not known. Server switches are never announced and the tab list never shows a server, by design: both would let players track each other. A line you delete falls back to the bundled default. Restart the proxy after editing.
 
 The store is `plugins/bsp_velocity_additions/last-servers.json`, one entry per player with the server name, the last known player name and a timestamp.
 

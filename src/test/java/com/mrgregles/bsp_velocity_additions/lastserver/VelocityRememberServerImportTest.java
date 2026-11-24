@@ -12,6 +12,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 class VelocityRememberServerImportTest {
@@ -45,6 +47,47 @@ class VelocityRememberServerImportTest {
         store.put(a, "Steve", "BSP-Spawn");
         assertEquals(0, VelocityRememberServerImport.importInto(store, yml, mock(Logger.class)), "a non-empty store is left alone");
         assertEquals(Optional.of("BSP-Spawn"), store.get(a));
+    }
+
+    /** D45 audit: after a season reset empties the store, a restart never imports the old servers again. */
+    @Test
+    void importsOnlyOnceSoAnEmptyStoreAfterASeasonResetStaysEmpty(@TempDir Path dir) throws Exception {
+        Path yml = dir.resolve("locations.yml");
+        Files.writeString(yml, "aff80d73-fa58-464d-b419-11187ffd8cd3: BSP-Wild\n");
+        Path marker = dir.resolve(VelocityRememberServerImport.DONE_MARKER);
+        JsonLastServerStore store = new JsonLastServerStore(dir.resolve("last.json"), Runnable::run, mock(Logger.class));
+
+        assertEquals(1, VelocityRememberServerImport.importOnce(store, yml, marker, mock(Logger.class)));
+        assertTrue(Files.exists(marker));
+        store.removeAll(Long.MAX_VALUE);
+
+        assertEquals(0, VelocityRememberServerImport.importOnce(store, yml, marker, mock(Logger.class)));
+        assertEquals(0, store.size());
+    }
+
+    /** A proxy that imported before the marker existed: a store in use marks the import done. */
+    @Test
+    void aStoreAlreadyInUseMarksTheImportDone(@TempDir Path dir) throws Exception {
+        Path yml = dir.resolve("locations.yml");
+        Files.writeString(yml, "aff80d73-fa58-464d-b419-11187ffd8cd3: BSP-Wild\n");
+        Path marker = dir.resolve(VelocityRememberServerImport.DONE_MARKER);
+        JsonLastServerStore store = new JsonLastServerStore(dir.resolve("last.json"), Runnable::run, mock(Logger.class));
+        store.put(a, "Steve", "BSP-Spawn");
+
+        assertEquals(0, VelocityRememberServerImport.importOnce(store, yml, marker, mock(Logger.class)));
+        assertTrue(Files.exists(marker));
+        store.removeAll(Long.MAX_VALUE);
+        assertEquals(0, VelocityRememberServerImport.importOnce(store, yml, marker, mock(Logger.class)));
+        assertEquals(0, store.size());
+    }
+
+    @Test
+    void withoutVelocityRememberServersFileNothingIsMarked(@TempDir Path dir) {
+        JsonLastServerStore store = new JsonLastServerStore(dir.resolve("last.json"), Runnable::run, mock(Logger.class));
+        Path marker = dir.resolve(VelocityRememberServerImport.DONE_MARKER);
+
+        assertEquals(0, VelocityRememberServerImport.importOnce(store, dir.resolve("nope.yml"), marker, mock(Logger.class)));
+        assertFalse(Files.exists(marker), "a fresh proxy still imports if the file turns up later, as before");
     }
 
     @Test

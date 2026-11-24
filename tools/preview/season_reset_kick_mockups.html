@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Season Reset Disconnect</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: a short brief, then three disconnect-screen cards (stacked on a phone), each with its messages.toml lines. Dark only: this is a game screen. */
+:root {
+  --bg: #0b0e13; --panel: #10151c; --inset: #0c0e12; --line: #2a2f3a;
+  --text: #e6eaf2; --muted: #9aa3b5; --hint: #6f7788;
+  --teal: #19d3b0; --violet: #b58cff; --gold: #ffd23a;
+  --mc-gold: #ffaa00; --mc-white: #ffffff; --mc-gray: #aaaaaa; --mc-aqua: #55ffff; --mc-yellow: #ffff55;
+  --mc: 'VT323', 'Courier New', monospace; --ui: 'IBM Plex Sans', system-ui, sans-serif;
+  color-scheme: dark;
+}
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--ui); font-size: 15px; line-height: 1.5;
+  padding-block: 28px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+main { max-width: 1180px; margin: 0 auto; display: grid; gap: 22px; }
+h1 { font-family: var(--mc); font-weight: 400; font-size: 34px; letter-spacing: .5px; margin: 0; color: var(--teal); text-wrap: balance; }
+p { margin: 0; max-width: 72ch; color: var(--muted); }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.card { background: var(--panel); border: 1px solid var(--teal); border-radius: 4px; padding: 14px 14px 16px; display: grid; gap: 12px; min-width: 0; align-content: start; }
+.card header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.card h2 { font-family: var(--mc); font-weight: 400; font-size: 26px; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+.tag { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border: 1px solid; border-radius: 3px; white-space: nowrap; }
+.tag.a { color: var(--gold); border-color: var(--gold); background: rgba(255,210,58,.12); }
+.tag.b { color: var(--teal); border-color: var(--teal); background: rgba(25,211,176,.12); }
+.tag.c { color: var(--violet); border-color: var(--violet); background: rgba(181,140,255,.12); }
+.screen { background: #2b1d12 repeating-linear-gradient(45deg, #2f2015 0 8px, #2a1c11 8px 16px); border: 1px solid var(--line);
+  min-height: 210px; display: grid; place-content: center; gap: 14px; padding: 18px 12px; text-align: center; font-family: var(--mc); font-size: 22px; line-height: 1.15; }
+.screen .t { color: var(--mc-gray); text-shadow: 2px 2px 0 #2a2a2a; }
+.screen .r { display: grid; gap: 2px; }
+.screen .g { color: var(--mc-gold); text-shadow: 2px 2px 0 #3f2a00; }
+.screen .w { color: var(--mc-white); text-shadow: 2px 2px 0 #3f3f3f; }
+.screen .s { color: var(--mc-gray); text-shadow: 2px 2px 0 #2a2a2a; }
+.screen .q { color: var(--mc-aqua); text-shadow: 2px 2px 0 #153f3f; }
+.screen .bold { font-weight: 700; letter-spacing: .5px; }
+.screen .btn { justify-self: center; margin-top: 6px; padding: 4px 26px; background: #6f6f6f; border: 2px solid #1b1b1b; color: var(--mc-white); font-size: 20px; }
+pre { margin: 0; background: var(--inset); border: 1px solid var(--line); padding: 10px; font-size: 12.5px; line-height: 1.45;
+  white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text); }
+.note { font-size: 13.5px; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Season reset: the disconnect screen</h1>
+  <p>When BSP-Core's <code>/bsp season reset</code> reaches the proxy, every player on the network is sent off with this screen.
+     BSP-Core's own kick (from each backend) shows option A's words in gold, and whichever arrives first is the one a player sees.
+     BSP-Core sends the starting season's number in the notice (request VA-C4); <code>kickNoNumber</code> is only for an older BSP-Core. Shown here with season 12.</p>
+  <div class="cards">
+    <section class="card">
+      <header><h2>A: one gold line</h2><span class="tag a">Bundled</span></header>
+      <div class="screen">
+        <div class="t">Disconnected</div>
+        <div class="r"><span class="g">Season 12 has begun! Everyone starts over. Log in again to get your fresh Shatter Totem.</span></div>
+        <div class="btn">Back to server list</div>
+      </div>
+      <pre>[seasonReset]
+kick = "&lt;gold&gt;Season &lt;season&gt; has begun! Everyone starts over. Log in again to get your fresh Shatter Totem."
+kickNoNumber = "&lt;gold&gt;A new season has begun! Everyone starts over. Log in again to get your fresh Shatter Totem."</pre>
+      <p class="note">The same screen as BSP-Core's own kick, so every player sees one look whichever kick lands first.</p>
+    </section>
+    <section class="card">
+      <header><h2>B: title and lines</h2><span class="tag b">Option</span></header>
+      <div class="screen">
+        <div class="t">Disconnected</div>
+        <div class="r"><span class="g bold">Season 12 has begun!</span><span class="w">Everyone starts over.</span><span class="s">Log in again to get your fresh Shatter Totem.</span></div>
+        <div class="btn">Back to server list</div>
+      </div>
+      <pre>[seasonReset]
+kick = "&lt;gold&gt;&lt;bold&gt;Season &lt;season&gt; has begun!&lt;/bold&gt;&lt;newline&gt;&lt;white&gt;Everyone starts over.&lt;newline&gt;&lt;gray&gt;Log in again to get your fresh Shatter Totem."
+kickNoNumber = "&lt;gold&gt;&lt;bold&gt;A new season has begun!&lt;/bold&gt;&lt;newline&gt;&lt;white&gt;Everyone starts over.&lt;newline&gt;&lt;gray&gt;Log in again to get your fresh Shatter Totem."</pre>
+      <p class="note">Easier to read, but players kicked by a backend first still see BSP-Core's single gold line.</p>
+    </section>
+    <section class="card">
+      <header><h2>C: totem in aqua</h2><span class="tag c">Option</span></header>
+      <div class="screen">
+        <div class="t">Disconnected</div>
+        <div class="r"><span class="g">Season 12 has begun! Everyone starts over.</span><span class="w">Log in again to get your fresh <span class="q">Shatter Totem</span>.</span></div>
+        <div class="btn">Back to server list</div>
+      </div>
+      <pre>[seasonReset]
+kick = "&lt;gold&gt;Season &lt;season&gt; has begun! Everyone starts over.&lt;newline&gt;&lt;white&gt;Log in again to get your fresh &lt;aqua&gt;Shatter Totem&lt;/aqua&gt;."
+kickNoNumber = "&lt;gold&gt;A new season has begun! Everyone starts over.&lt;newline&gt;&lt;white&gt;Log in again to get your fresh &lt;aqua&gt;Shatter Totem&lt;/aqua&gt;."</pre>
+      <p class="note">Points at the totem; the same mismatch with BSP-Core's kick as B.</p>
+    </section>
+  </div>
+</main>
+</body>
+</html>

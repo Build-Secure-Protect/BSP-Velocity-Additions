@@ -265,3 +265,18 @@ Built and unit-tested on 2026-11-19 (version 0.3.0). The tests ran against H2 in
 - [ ] `discord-links.json` and their store orders (`/storeadmin lookup <name>`) are unchanged.
 - [ ] Optional: `[playerReset] enabled = false`, restart: the log shows `playerReset.enabled is false`, and a reset no longer changes `last-servers.json`.
 
+## 2026-11-24: season reset disconnects everyone and forgets every last server (D45)
+
+**Built and tested (0.3.2):** 33 new unit tests (342 in all, two full runs; 3 for BSP-Core's `<resetNumber>|<season>` payload, VA-C4, and 8 from the audit: the import runs once, online sessions held during the forget, the older-number warning, extra payload fields): `SeasonResetMessageTest` (the notice, with and without a season number, a server id with `:`, what is ignored), `SeasonResetFeatureTest` (every player disconnected with the bundled wording, the number used when sent, the lines match BSP-Core's kick, forgotten before disconnected, the same notice twice and an older one do nothing, a newer one applies, `season-reset.json` kept across a restart, an unreadable record, `lastServer` off, one failed disconnect, unreadable notices warned about, Discord links untouched), `PlayerResetFeatureTest` (season notices routed, player resets unchanged, and a run against a Redis stand-in on a socket with the last-server feature off), `JsonLastServerStoreTest` (`removeAll` keeps a newer entry, one save) and `PluginConfigTest` (`[seasonReset]`). `check_proxy_api.sh` passes. Loaded on the local proxy (an old `config.toml` without the section): `Player reset: on, ... channel bsp_core (season resets too)`, then quiet retries with no Redis.
+
+**Not yet tried against a real Redis or BSP-Core.** Needs BSP-Core with `/bsp season reset` on the backends. Best run on a test network: it ends the season for everyone.
+- [ ] Install the jar and restart. The log shows `Player reset: on, connecting to Redis <host>:<port> for BSP-Core's resets on channel bsp_core (season resets too)`, then `Player reset: listening on Redis ... channel bsp_core`.
+- [ ] Two test players: one on BSP-Wild, one on another non-fallback server. A third, offline, whose `last-servers.json` entry is BSP-Wild.
+- [ ] Run `/bsp season reset` on any backend. Both online players are disconnected with "Season <new season> has begun! Everyone starts over. Log in again to get your fresh Shatter Totem." (gold). The proxy logs `Season reset <n> from <server> (season <new season>): 2 player(s) disconnected, <m> last server(s) forgotten, so everyone joins the fallback server`.
+- [ ] `last-servers.json` is empty (or holds only players who joined after the reset), and `season-reset.json` holds `"lastResetNumber": <n>`.
+- [ ] All three log in: each lands on the fallback server.
+- [ ] Restart the proxy. Nothing is disconnected or forgotten at start.
+- [ ] Optional, the repeat: with `redis-cli PUBLISH bsp_core "season_reset:BSP-Spawn:<n>|<new season>"` (the same numbers), the proxy logs `reset <n> from BSP-Spawn was already applied here`; nobody is disconnected.
+- [ ] `discord-links.json` and the store orders (`/storeadmin lookup <name>`) are unchanged.
+- [ ] Optional: `[seasonReset] enabled = false`, restart: the log shows `seasonReset.enabled is false`, and a season reset changes nothing on the proxy (each backend still sends its own players off).
+

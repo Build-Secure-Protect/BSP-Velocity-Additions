@@ -19,6 +19,11 @@ public final class VelocityRememberServerImport {
 
     /** Where VelocityRememberServer keeps its file, relative to the proxy's plugins folder. */
     public static final String RELATIVE_PATH = "velocityrememberserver/locations.yml";
+    /**
+     * Written in this plugin's data folder once the import has run, or once the store is found in use, so an empty
+     * store later (after a season reset, D45) never brings VelocityRememberServer's old servers back.
+     */
+    public static final String DONE_MARKER = "velocityrememberserver-imported";
 
     private VelocityRememberServerImport() {
     }
@@ -47,6 +52,37 @@ public final class VelocityRememberServerImport {
             }
         }
         return out;
+    }
+
+    /**
+     * Copies the entries into {@code store} once: only when {@code doneMarker} does not exist, the store is empty and
+     * the file exists. The marker is written after an import and whenever the store is found in use.
+     *
+     * @return how many players were imported, 0 when nothing was done
+     */
+    public static int importOnce(LastServerStore store, Path locationsYml, Path doneMarker, Logger logger) {
+        if (Files.exists(doneMarker)) {
+            return 0;
+        }
+        if (store.size() > 0) {
+            markDone(doneMarker, logger);
+            return 0;
+        }
+        int imported = importInto(store, locationsYml, logger);
+        if (imported > 0) {
+            markDone(doneMarker, logger);
+        }
+        return imported;
+    }
+
+    private static void markDone(Path doneMarker, Logger logger) {
+        try {
+            Files.createDirectories(doneMarker.toAbsolutePath().getParent());
+            Files.writeString(doneMarker, "VelocityRememberServer's locations.yml is not imported again while this file exists.\n",
+                    StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            logger.warn("Could not write {} ({}); an empty last-server list would import locations.yml again", doneMarker, e.toString());
+        }
     }
 
     /**

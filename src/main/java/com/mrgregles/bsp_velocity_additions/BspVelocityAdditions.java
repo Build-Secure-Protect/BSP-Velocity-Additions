@@ -12,6 +12,7 @@ import com.mrgregles.bsp_velocity_additions.journeymap.WorldIds;
 import com.mrgregles.bsp_velocity_additions.joinleave.JoinLeaveFeature;
 import com.mrgregles.bsp_velocity_additions.players.PlayersCommand;
 import com.mrgregles.bsp_velocity_additions.reset.PlayerResetFeature;
+import com.mrgregles.bsp_velocity_additions.reset.SeasonResetFeature;
 import com.mrgregles.bsp_velocity_additions.store.StoreFeature;
 import com.mrgregles.bsp_velocity_additions.tablist.LuckPermsPrefixes;
 import com.mrgregles.bsp_velocity_additions.tablist.NameFormatter;
@@ -150,9 +151,16 @@ public final class BspVelocityAdditions {
         }
         discord = DiscordFeature.start(config.discord(), messages, dataDirectory, System::getenv, logger).orElse(null);
         storeFeature = StoreFeature.start(this, proxy, dataDirectory, System::getenv, messages, logger).orElse(null);
+        SeasonResetFeature seasonReset = null;
+        if (config.seasonReset().enabled()) {
+            seasonReset = SeasonResetFeature.create(lastServerFeature == null ? null : lastServerFeature::forgetAll,
+                    proxy::getAllPlayers, messages, dataDirectory, logger);
+        } else {
+            logger.info("seasonReset.enabled is false; a season reset by BSP-Core does not disconnect players or forget last servers here");
+        }
         playerReset = PlayerResetFeature.start(config.playerReset(),
                 lastServerFeature == null ? null : lastServerFeature::forget,
-                proxy::getPlayer, System::getenv, logger).orElse(null);
+                seasonReset, proxy::getPlayer, System::getenv, logger).orElse(null);
     }
 
     private void startJourneyMap(PluginConfig.JourneyMap settings) {
@@ -177,7 +185,8 @@ public final class BspVelocityAdditions {
         if (settings.importVelocityRememberServer()) {
             Path pluginsFolder = dataDirectory.toAbsolutePath().getParent();
             if (pluginsFolder != null) {
-                VelocityRememberServerImport.importInto(store, pluginsFolder.resolve(VelocityRememberServerImport.RELATIVE_PATH), logger);
+                VelocityRememberServerImport.importOnce(store, pluginsFolder.resolve(VelocityRememberServerImport.RELATIVE_PATH),
+                        dataDirectory.resolve(VelocityRememberServerImport.DONE_MARKER), logger);
             }
         }
         ServerReachability reachability = new ServerReachability(logger,

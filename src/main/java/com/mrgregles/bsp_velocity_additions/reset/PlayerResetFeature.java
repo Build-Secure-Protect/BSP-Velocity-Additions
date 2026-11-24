@@ -15,6 +15,9 @@ import java.util.function.Function;
  * new player's. The Discord link ({@code discord-links.json}) and the store records ({@code bsp_shop}) are left alone.
  * Every other message on the channel, and anything malformed, is ignored. Doing one reset twice is harmless.
  * <p>
+ * The same subscription carries BSP-Core's {@code season_reset} notices (decision D45), which go to
+ * {@link SeasonResetFeature} when it is on.
+ * <p>
  * Redis pub/sub keeps nothing: a reset sent while the proxy or Redis is down never reaches the proxy.
  */
 public final class PlayerResetFeature {
@@ -31,31 +34,52 @@ public final class PlayerResetFeature {
     }
 
     private final Forgetter lastServers;
+    private final SeasonResetFeature seasonReset;
     private final Function<UUID, Optional<Player>> online;
     private final Logger logger;
     private RespRedis redis;
 
     PlayerResetFeature(Forgetter lastServers, Function<UUID, Optional<Player>> online, Logger logger) {
+        this(lastServers, null, online, logger);
+    }
+
+    /** Either of {@code lastServers} and {@code seasonReset} may be null: that kind of notice is then ignored. */
+    PlayerResetFeature(Forgetter lastServers, SeasonResetFeature seasonReset, Function<UUID, Optional<Player>> online,
+                       Logger logger) {
         this.lastServers = lastServers;
+        this.seasonReset = seasonReset;
         this.online = online;
         this.logger = logger;
     }
 
-    /**
-     * Starts listening. Empty when the feature is off, or when {@code lastServers} is null (the last-server feature
-     * is off, so there is nothing to forget). The password is read here and passed on, never stored or logged.
-     */
+    /** Starts listening for player resets only (no season reset). */
     public static Optional<PlayerResetFeature> start(PluginConfig.PlayerReset settings, Forgetter lastServers,
                                                      Function<UUID, Optional<Player>> online,
                                                      Function<String, String> environment,
                                                      Logger logger) {
+        return start(settings, lastServers, null, online, environment, logger);
+    }
+
+    /**
+     * Starts listening. Empty when the feature is off, or when both {@code lastServers} (null: the last-server
+     * feature is off, so there is no player reset to apply) and {@code seasonReset} (null: {@code seasonReset.enabled}
+     * is false) are null. The password is read here and passed on, never stored or logged.
+     */
+    public static Optional<PlayerResetFeature> start(PluginConfig.PlayerReset settings, Forgetter lastServers,
+                                                     SeasonResetFeature seasonReset,
+                                                     Function<UUID, Optional<Player>> online,
+                                                     Function<String, String> environment,
+                                                     Logger logger) {
         if (!settings.enabled()) {
-            logger.info("playerReset.enabled is false; a player reset by BSP-Core keeps their last server");
+            logger.info("playerReset.enabled is false; BSP-Core's player and season resets do not reach the proxy");
+            return Optional.empty();
+        }
+        if (lastServers == null && seasonReset == null) {
+            logger.info("Player reset: lastServer.enabled and seasonReset.enabled are false, so there is nothing to do; not listening");
             return Optional.empty();
         }
         if (lastServers == null) {
-            logger.info("Player reset: lastServer.enabled is false, so there is no last server to forget; not listening");
-            return Optional.empty();
+            logger.info("Player reset: lastServer.enabled is false, so a player reset has no last server to forget");
         }
         String password = environment.apply(PASSWORD_VARIABLE);
         if (password == null || password.isBlank()) {
@@ -66,17 +90,24 @@ public final class PlayerResetFeature {
                     PASSWORD_VARIABLE, FALLBACK_PASSWORD_VARIABLE);
             password = "";
         }
-        PlayerResetFeature feature = new PlayerResetFeature(lastServers, online, logger);
+        PlayerResetFeature feature = new PlayerResetFeature(lastServers, seasonReset, online, logger);
         feature.redis = new RespRedis(settings.redisHost(), settings.redisPort(), settings.redisUser(), password,
                 logger, "Player reset", accessHint(settings));
         feature.redis.subscribe(settings.redisChannel(), feature::onRedisMessage, () -> { });
-        logger.info("Player reset: on, connecting to Redis {}:{} for BSP-Core's resets on channel {}",
-                settings.redisHost(), settings.redisPort(), settings.redisChannel());
+        logger.info("Player reset: on, connecting to Redis {}:{} for BSP-Core's resets on channel {}{}",
+                settings.redisHost(), settings.redisPort(), settings.redisChannel(),
+                seasonReset == null ? "" : " (season resets too)");
         return Optional.of(feature);
     }
 
     /** One message from the channel, on the Redis thread. True when it was a reset and was applied. */
     boolean onRedisMessage(String text) {
+        if (SeasonResetMessage.isSeasonResetKind(text)) {
+            return seasonReset != null && seasonReset.onRedisMessage(text);
+        }
+        if (lastServers == null) {
+            return false;
+        }
         Optional<PlayerResetMessage> parsed = PlayerResetMessage.parse(text);
         if (parsed.isEmpty()) {
             if (PlayerResetMessage.isResetKind(text)) {

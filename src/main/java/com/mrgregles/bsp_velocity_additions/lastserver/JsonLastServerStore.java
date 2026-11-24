@@ -84,6 +84,22 @@ public final class JsonLastServerStore implements LastServerStore {
     }
 
     @Override
+    public int removeAll(long changedBeforeMs) {
+        int[] removed = new int[1];
+        entries.entrySet().removeIf(e -> {
+            if (e.getValue().at() < changedBeforeMs) {
+                removed[0]++;
+                return true;
+            }
+            return false;
+        });
+        if (removed[0] > 0) {
+            scheduleSave();
+        }
+        return removed[0];
+    }
+
+    @Override
     public int size() {
         return entries.size();
     }

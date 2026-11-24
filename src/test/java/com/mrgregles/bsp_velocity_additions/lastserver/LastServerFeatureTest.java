@@ -236,6 +236,35 @@ class LastServerFeatureTest {
         assertEquals(Optional.empty(), store.get(steveId), "the real session's switch is still not recorded");
     }
 
+    /**
+     * D45 audit: a season reset holds the online sessions while it forgets, so a server switch that completes before
+     * the disconnect is not remembered; the hold ends when the session leaves.
+     */
+    @Test
+    void aSeasonResetHoldsOnlineSessionsSoASwitchBeforeTheDisconnectIsNotRemembered() {
+        when(steve.isActive()).thenReturn(true);
+        store.put(steveId, "Steve", "BSP-Spawn");
+
+        assertEquals(1, feature.forgetAll(afterNow(), java.util.List.of(steve)));
+        feature.onServerConnected(new ServerConnectedEvent(steve, wild, spawn));
+
+        assertEquals(Optional.empty(), store.get(steveId), "the switch in between is not recorded");
+        feature.onDisconnect(new DisconnectEvent(steve, DisconnectEvent.LoginStatus.SUCCESSFUL_LOGIN));
+        assertFalse(feature.isHeld(steve));
+        Player nextSession = sessionOf(steveId);
+        feature.onServerConnected(new ServerConnectedEvent(nextSession, spawn, null));
+        assertEquals(Optional.of("BSP-Spawn"), store.get(steveId), "the next session is remembered as normal");
+    }
+
+    @Test
+    void aSeasonResetDoesNotHoldASessionThatHasAlreadyLeft() {
+        when(steve.isActive()).thenReturn(false);
+
+        feature.forgetAll(afterNow(), java.util.List.of(steve));
+
+        assertFalse(feature.isHeld(steve));
+    }
+
     /** Audit 2: a player who left between the online check and the hold does not have their next session blocked. */
     @Test
     void aPlayerWhoLeftDuringTheResetIsNotHeldIntoTheirNextSession() {
@@ -304,6 +333,14 @@ class LastServerFeatureTest {
             }
             at.remove(player);
             return Optional.ofNullable(map.remove(player));
+        }
+
+        @Override
+        public int removeAll(long changedBeforeMs) {
+            int before = map.size();
+            map.keySet().removeIf(p -> at.get(p) < changedBeforeMs);
+            at.keySet().retainAll(map.keySet());
+            return before - map.size();
         }
 
         @Override

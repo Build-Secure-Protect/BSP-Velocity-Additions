@@ -19,6 +19,14 @@ public interface LastServerStore {
      */
     Optional<String> remove(UUID player, long changedBeforeMs);
 
+    /**
+     * Forgets every player whose entry last changed before {@code changedBeforeMs} (epoch ms): a season reset (D45).
+     * Doing it twice is harmless.
+     *
+     * @return how many entries were forgotten
+     */
+    int removeAll(long changedBeforeMs);
+
     int size();
 
     /** Writes pending changes now. Called when the proxy stops. */

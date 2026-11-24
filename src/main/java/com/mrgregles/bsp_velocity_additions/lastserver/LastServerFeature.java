@@ -10,6 +10,7 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import org.slf4j.Logger;
 
+import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -106,6 +107,24 @@ public final class LastServerFeature {
             }
         }
         return forgotten;
+    }
+
+    /**
+     * A season reset (D45): forgets every player's last server last changed before {@code resetMs}, so everyone's
+     * next join goes to the fallback server. The sessions in {@code online} are held first, as for a player reset
+     * while online, so a server switch that completes before the season reset disconnects them is not recorded.
+     * A hold ends when that session leaves. Any thread; idempotent.
+     *
+     * @return how many last servers were forgotten
+     */
+    public int forgetAll(long resetMs, Collection<Player> online) {
+        for (Player session : online) {
+            resetThisSession.put(session.getUniqueId(), session);
+            if (!session.isActive()) {
+                releaseHold(session.getUniqueId(), session);
+            }
+        }
+        return store.removeAll(resetMs);
     }
 
     /** True while the given session is held after a reset. */

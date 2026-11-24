@@ -97,6 +97,30 @@ class JsonLastServerStoreTest {
         assertEquals(Optional.of("BSP-Wild"), store.get(steve));
     }
 
+    /** D45: a season reset forgets every entry last changed before it, saves once, and keeps a newer one. */
+    @Test
+    void removeAllForgetsEveryOlderEntryAndKeepsANewerOne(@TempDir Path dir) throws Exception {
+        Path file = dir.resolve(JsonLastServerStore.FILE_NAME);
+        Files.writeString(file, """
+                {"aff80d73-fa58-464d-b419-11187ffd8cd3": {"server": "BSP-Wild", "name": "Steve", "at": 2000},
+                 "376f7d5b-6510-46e9-8bbf-936377461446": {"server": "BSP-Spawn", "name": "Alex", "at": 1000},
+                 "0f8fad5b-d9cb-469f-a165-70867728950e": {"server": "BSP-Spawn", "name": "Nova", "at": 1499}}
+                """);
+        java.util.concurrent.atomic.AtomicInteger saves = new java.util.concurrent.atomic.AtomicInteger();
+        JsonLastServerStore store = new JsonLastServerStore(file, task -> { saves.incrementAndGet(); task.run(); },
+                mock(Logger.class));
+
+        assertEquals(2, store.removeAll(1500L));
+        assertEquals(1, saves.get(), "one save for the whole reset");
+        assertEquals(0, store.removeAll(1500L), "twice is harmless");
+        assertEquals(1, saves.get(), "and saves nothing");
+
+        JsonLastServerStore reloaded = new JsonLastServerStore(file, Runnable::run, mock(Logger.class));
+        assertEquals(1, reloaded.size());
+        assertEquals(Optional.of("BSP-Wild"), reloaded.get(steve), "played since the reset: kept");
+        assertEquals(Optional.empty(), reloaded.get(alex));
+    }
+
     @Test
     void removingSomeoneNotOnFileSchedulesNoSave(@TempDir Path dir) {
         java.util.concurrent.atomic.AtomicInteger saves = new java.util.concurrent.atomic.AtomicInteger();
